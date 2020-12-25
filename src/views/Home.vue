@@ -35,10 +35,14 @@
 
             <v-col cols="8">
               <v-card-title>
-                {{ videoInfo.videoDetails.title }}
+                {{ videoInfo.videoDetails.title.slice(0, 40) }}
+                {{ videoInfo.videoDetails.title.length > 40 ? '...' : '' }}
               </v-card-title>
               <v-card-text>
-                {{ videoInfo.videoDetails.description.slice(0, 120) }}...
+                {{ videoInfo.videoDetails.description.slice(0, 120) }}
+                {{
+                  videoInfo.videoDetails.description.length > 120 ? '...' : ''
+                }}
               </v-card-text>
             </v-col>
           </v-row>
@@ -61,9 +65,7 @@
             outlined
           ></v-text-field>
 
-          <p>
-            都不選擇時 預設皆為最高
-          </p>
+          <p>都不選擇時 預設皆為最高</p>
 
           <v-menu max-height="400">
             <template #activator="{ on }">
@@ -144,6 +146,36 @@
         <v-btn color="success" @click="start">下載</v-btn>
       </template>
     </v-container>
+
+    <v-dialog v-model="isProcessing" persistent max-width="800">
+      <v-card v-if="tracker">
+        <v-card-title>
+          下載中
+        </v-card-title>
+        <v-card-text>
+          音訊:
+          <br />
+          <v-progress-linear
+            color="cyan"
+            height="25"
+            :value="(tracker.audio.downloaded / tracker.audio.total) * 100"
+          ></v-progress-linear>
+          <br />
+          視訊:
+          <br />
+          <v-progress-linear
+            color="success"
+            height="25"
+            :value="(tracker.video.downloaded / tracker.video.total) * 100"
+          ></v-progress-linear>
+          <br />
+          <p>
+            已合併:影格 {{ tracker.merged.frame }}, 速度
+            {{ tracker.merged.speed }}, fps {{ tracker.merged.fps }}
+          </p>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
@@ -156,13 +188,20 @@ export default {
 
   data() {
     return {
-      ytUrl: 'https://www.youtube.com/watch?v=UBSx4qqeikY',
-      path: '/Users/red4/Downloads',
+      ytUrl: '',
+      path: '',
       title: '',
       loading: false,
       videoInfo: null,
       vQuality: null,
-      aQuality: null
+      aQuality: null,
+      isProcessing: false,
+      tracker: {
+        start: Date.now(),
+        audio: { downloaded: 0, total: Infinity },
+        video: { downloaded: 0, total: Infinity },
+        merged: { frame: 0, speed: '0x', fps: 0 }
+      }
     };
   },
 
@@ -194,8 +233,12 @@ export default {
       (event, path) => (this.path = !path.canceled ? path.filePaths[0] : '')
     );
 
-    ipcRenderer.on('download-complete', () => console.log('complete'));
-    ipcRenderer.on('download-fail', () => console.log('fail'));
+    ipcRenderer.on(
+      'download-processing',
+      (event, tracker) => (this.tracker = tracker)
+    );
+    ipcRenderer.on('download-complete', () => (this.isProcessing = false));
+    ipcRenderer.on('download-fail', () => (this.isProcessing = false));
   },
 
   methods: {
@@ -224,6 +267,7 @@ export default {
 
     start() {
       if (!this.$refs.form.validate()) return;
+      this.isProcessing = true;
       ipcRenderer.send('download', {
         title: this.title,
         url: this.ytUrl,

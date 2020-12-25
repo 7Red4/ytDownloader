@@ -1,14 +1,18 @@
 const ytdl = require('ytdl-core');
 // Buildin with nodejs
-const cp = require('child_process');
+import cp from 'child_process';
+import readline from 'readline';
+import filenamify from 'filenamify';
 // External modules
-const ffmpeg = require('ffmpeg-static-electron');
+
+const appRootDir = require('app-root-dir').get();
+const ffmpeg = appRootDir + '\\bin\\ffmpeg\\ffmpeg.exe';
 
 const getInfo = async url => {
   return await ytdl.getBasicInfo(url);
 };
 
-const start = async req => {
+const start = async (req, event) => {
   // Global constants
   const { url, title, path, quality } = req;
   console.log(`${path}/${title}.mp4`);
@@ -34,16 +38,16 @@ const start = async req => {
   });
 
   // Prepare the progress bar
-  const progressbarHandle = null;
+  let progressbarHandle = null;
   const progressbarInterval = 1000;
   const showProgress = () => {
-    //
+    event.reply('download-processing', tracker);
   };
 
   try {
     // Start the ffmpeg child process
     const ffmpegProcess = cp.spawn(
-      ffmpeg.path,
+      ffmpeg,
       [
         // Remove ffmpeg's console spamming
         '-loglevel',
@@ -66,7 +70,7 @@ const start = async req => {
         '-c:v',
         'copy',
         // Define output file
-        `${path}/${title}.mp4`
+        `${path}\\${filenamify(title)}.mp4`
       ],
       {
         windowsHide: true,
@@ -84,7 +88,7 @@ const start = async req => {
     );
 
     ffmpegProcess.on('close', () => {
-      console.log('done');
+      event.reply('download-complete');
       // Cleanup
       clearInterval(progressbarHandle);
     });
@@ -93,20 +97,20 @@ const start = async req => {
     // FFmpeg creates the transformer streams and we just have to insert / read data
     ffmpegProcess.stdio[3].on('data', chunk => {
       // // Start the progress bar
-      // if (!progressbarHandle) {
-      //   progressbarHandle = setInterval(showProgress, progressbarInterval);
-      // }
-      // // Parse the param=value list returned by ffmpeg
-      // const lines = chunk
-      //   .toString()
-      //   .trim()
-      //   .split('\n');
-      // const args = {};
-      // for (const l of lines) {
-      //   const [key, value] = l.split('=');
-      //   args[key.trim()] = value.trim();
-      // }
-      // tracker.merged = args;
+      if (!progressbarHandle) {
+        progressbarHandle = setInterval(showProgress, progressbarInterval);
+      }
+      // Parse the param=value list returned by ffmpeg
+      const lines = chunk
+        .toString()
+        .trim()
+        .split('\n');
+      const args = {};
+      for (const l of lines) {
+        const [key, value] = l.split('=');
+        args[key.trim()] = value.trim();
+      }
+      tracker.merged = args;
     });
 
     audio.pipe(ffmpegProcess.stdio[4]);

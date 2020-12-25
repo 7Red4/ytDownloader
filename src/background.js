@@ -98,8 +98,7 @@ ipcMain.on('pick-path', async event => {
 
 ipcMain.on('download', async (event, req) => {
   try {
-    await start(req);
-    event.reply('download-complete');
+    await start(req, event);
   } catch (error) {
     event.reply('download-fail');
     console.error(error);
