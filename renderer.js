@@ -5,7 +5,6 @@
 // selectively enable features needed in the rendering
 // process.
 const { ipcRenderer, webFrame } = require("electron");
-const { check } = require("yargs");
 
 webFrame.insertCSS("./style/main.css");
 
@@ -86,18 +85,26 @@ ipcRenderer.on("download-complete", () => {
   data.isProcessing = false;
   $(".audio-progress").style.width = `100%`;
   $(".video-progress").style.width = `100%`;
+  alert("完成");
 });
 
 ipcRenderer.on("download-fail", () => {
   data.isProcessing = false;
+  alert("完成");
 });
 
 // EVENT LISTENERS
 
-$("#ytUrl").addEventListener("focus", (e) => e.target.classList.remove("require") && handleFocus());
+$("#ytUrl").addEventListener("focus", (e) => {
+  e.target.classList.remove("require");
+  handleFocus();
+});
 $("#path").addEventListener("focus", (e) => e.target.classList.remove("require"));
 $("#confirm").addEventListener("click", () => analyzeText($("#ytUrl").value));
-$("#path-append").addEventListener("click", () => $("#path").classList.remove("require") && pickFilePath());
+$("#path-append").addEventListener("click", () => {
+  $("#path").classList.remove("require");
+  pickFilePath();
+});
 $("#start").addEventListener("click", () => start());
 
 $("#ytUrl").addEventListener("blur", (e) => checkEmpty(e.target));
@@ -203,7 +210,7 @@ const renderVideoInfo = (videoInfo) => {
 const renderTracker = () => {
   $("#tracker").innerHTML = "";
   const render = h("div", { class: ["v-card"] }, [
-    h("h4", null, `開始時間 : ${Date}`),
+    h("h4", null, `開始時間 : ${new Date()}`),
     h("p", null, "音訊 :"),
     h("div", { class: ["audio-progress-wrapper", "progress-wrapper"] }, [
       h("div", { class: ["progress", "audio-progress"] }),

@@ -4,7 +4,7 @@ const { app, protocol, BrowserWindow, ipcMain, dialog } = require("electron");
 const { getInfo, start } = require("./ytdl.js");
 const consola = require("consola");
 
-const isDevelopment = process.env.NODE_ENV !== "production";
+const isDevelopment = false;
 
 // Scheme must be registered before the app is ready
 protocol.registerSchemesAsPrivileged([{ scheme: "app", privileges: { secure: true, standard: true } }]);

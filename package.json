@@ -5,7 +5,7 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "NODE_ENV=production electron-builder"
+    "build": "electron-builder"
   },
   "author": "7Red4",
   "devDependencies": {
@@ -16,6 +16,7 @@
   "dependencies": {
     "app-root-dir": "^1.0.2",
     "consola": "^2.15.0",
+    "cross-env": "^7.0.3",
     "ffmpeg-static": "^4.2.7",
     "filenamify": "^4.2.0",
     "ytdl-core": "^4.2.1"
