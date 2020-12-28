@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self'" />
+    <meta http-equiv="X-Content-Security-Policy" content="script-src 'self'" />
+    <link rel="stylesheet" type="text/css" href="./style/normalize.css" />
+    <link rel="stylesheet" type="text/css" href="./style/main.css" />
+    <title>YT downloader!</title>
+  </head>
+  <body>
+    <div class="text-field">
+      <input id="ytUrl" />
+      <span class="label">Youtube url</span>
+      <button id="confirm" class="btn">確認</button>
+    </div>
+
+    <div id="videoInfo">
+      <!--
+        <div class="v-card">
+          <div class="v-row">
+            <div class="v-col cols-4">
+              <img thumbnail />
+            </div>
+
+            <div class="v-col cols-8">
+              <p class="v-card-title"></p>
+              <p class="v-card-text"></p>
+            </div>
+          </div>
+        </div>
+      -->
+    </div>
+
+    <div>
+      <!-- 
+      <v-form ref="form">
+        <v-text-field
+          label="標題"
+          v-model="title"
+          :rules="[v => !!v || '標題不為空']"
+          outlined
+        ></v-text-field>
+  
+        <v-text-field
+          label="儲存路徑"
+          append-icon="mdi-dots-horizontal"
+          v-model="path"
+          @click:append="pickFilePath"
+          :rules="[v => !!v || '請選擇路徑']"
+          outlined
+        ></v-text-field>
+  
+        <p>都不選擇時 預設皆為最高</p>
+  
+        <v-menu max-height="400">
+          <template #activator="{ on }">
+            <v-text-field
+              v-on="on"
+              :value="vQualityText"
+              @click:clear="vQuality = null"
+              label="選擇畫質"
+              readonly
+              clearable
+              outlined
+            ></v-text-field>
+          </template>
+          <v-list>
+            <v-list-item-group v-model="vQuality" label="選擇畫質">
+              <v-list-item
+                v-for="(format,
+                i) in videoInfo.formats.filter(({ mimeType }) =>
+                  /video/.test(mimeType)
+                )"
+                :key="i"
+                :value="format"
+                two-line
+              >
+                <v-list-item-content>
+                  <v-list-item-title
+                    v-text="format.qualityLabel"
+                  ></v-list-item-title>
+                  <v-list-item-subtitle
+                    v-text="format.quality"
+                  ></v-list-item-subtitle>
+                  <v-list-item-subtitle
+                    v-text="format.mimeType"
+                  ></v-list-item-subtitle>
+                </v-list-item-content>
+              </v-list-item>
+            </v-list-item-group>
+          </v-list>
+        </v-menu>
+  
+        <v-menu max-height="400">
+          <template #activator="{ on }">
+            <v-text-field
+              v-on="on"
+              :value="aQualityText"
+              @click:clear="aQuality = null"
+              label="選擇音質"
+              readonly
+              clearable
+              outlined
+            ></v-text-field>
+          </template>
+          <v-list>
+            <v-list-item-group v-model="aQuality" label="選擇音質">
+              <v-list-item
+                v-for="(format,
+                i) in videoInfo.formats.filter(({ mimeType }) =>
+                  /audio/.test(mimeType)
+                )"
+                :key="i"
+                :value="format"
+                two-line
+              >
+                <v-list-item-content>
+                  <v-list-item-title
+                    v-text="format.quality"
+                  ></v-list-item-title>
+                  <v-list-item-subtitle
+                    v-text="format.mimeType"
+                  ></v-list-item-subtitle>
+                </v-list-item-content>
+              </v-list-item>
+            </v-list-item-group>
+          </v-list>
+        </v-menu>
+      </v-form>
+  
+      <v-btn color="success" @click="start">下載</v-btn>
+    -->
+      <div class="text-field">
+        <input type="text" id="title" />
+        <span class="label">標題</span>
+      </div>
+
+      <div class="text-field">
+        <input type="text" id="path" />
+        <span class="label">儲存路徑</span>
+        <button id="path-append" class="btn">...</button>
+      </div>
+
+      <button id="start" class="btn">下載</button>
+    </div>
+
+    <!-- You can also require other files to run in this process -->
+    <script src="./renderer.js"></script>
+  </body>
+</html>

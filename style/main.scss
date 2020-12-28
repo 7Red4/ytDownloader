@@ -1,0 +1,118 @@
+$inputSidePadding: 8px;
+$inputVertMargin: 16px;
+$inputSideMargin: 8px;
+$btnSidePadding: 8px;
+$btnSideMargin: 8px;
+
+body {
+  background-color: #fff;
+}
+
+.d-flex {
+  display: flex !important;
+}
+
+.flex-column {
+  flex-direction: column !important;
+}
+
+.flex-wrap {
+  flex-wrap: wrap !important;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+input,
+button {
+  outline: none;
+}
+
+img {
+  max-width: 100%;
+}
+
+input {
+  min-height: 32px;
+}
+
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.v-card {
+  background-color: #fafafa;
+  box-shadow: 0 3px 6px rgba($color: #000000, $alpha: 0.38);
+  margin: 8px;
+  padding: 12px;
+  border-radius: 4px;
+}
+
+.v-card-title,
+.v-card-text {
+  padding: 8px;
+}
+
+.v-card-title {
+  font-weight: 700;
+  font-size: 1.5rem;
+}
+
+.v-row {
+  display: flex;
+  width: 100%;
+  margin: 0 -12px;
+}
+
+.v-col {
+  flex: 1;
+  width: 100%;
+  padding: 0 12px;
+}
+
+@for $i from 1 to 13 {
+  .cols-#{$i} {
+    flex: $i / 12;
+    width: $i / 12 * 100%;
+  }
+}
+
+.btn {
+  padding: 0 $btnSidePadding;
+  margin: $btnSideMargin;
+}
+
+.text-field {
+  padding: 0 $inputSidePadding;
+  margin: $inputVertMargin $inputSideMargin;
+  position: relative;
+  display: flex;
+  border: 1px solid #000;
+  border-radius: 4px;
+
+  .label {
+    position: absolute;
+    left: $inputSidePadding + $inputSideMargin;
+    transform: translateY(-50%);
+
+    transition: 0.1s;
+  }
+
+  input {
+    flex: 1;
+    border: none;
+    & ~ .label {
+      font-size: 0.8em;
+      top: 0;
+      background-color: #fff;
+    }
+    &[value=""] ~ .label {
+      top: 50%;
+    }
+  }
+}
