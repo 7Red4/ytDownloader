@@ -5,16 +5,18 @@
 // selectively enable features needed in the rendering
 // process.
 const { ipcRenderer, webFrame } = require("electron");
+const { check } = require("yargs");
 
 webFrame.insertCSS("./style/main.css");
 
 const h = (tag, attrs, val = []) => {
   const elem = document.createElement(tag);
+  attrs = attrs || {};
   Object.keys(attrs).forEach((prop) => {
     if (prop === "class") {
       attrs[prop].forEach((className) => elem.classList.add(className));
     } else {
-      elem[prop] = attrs[prop];
+      elem.setAttribute(prop, attrs[prop]);
     }
   });
 
@@ -77,10 +79,13 @@ ipcRenderer.on("pick-path-reply", (event, path) => {
 ipcRenderer.on("download-processing", (event, tracker) => {
   data.tracker = tracker;
   binding();
+  updateTracker(tracker);
 });
 
 ipcRenderer.on("download-complete", () => {
   data.isProcessing = false;
+  $(".audio-progress").style.width = `100%`;
+  $(".video-progress").style.width = `100%`;
 });
 
 ipcRenderer.on("download-fail", () => {
@@ -89,16 +94,46 @@ ipcRenderer.on("download-fail", () => {
 
 // EVENT LISTENERS
 
-$("#ytUrl").addEventListener("focus", () => handleFocus());
+$("#ytUrl").addEventListener("focus", (e) => e.target.classList.remove("require") && handleFocus());
+$("#path").addEventListener("focus", (e) => e.target.classList.remove("require"));
 $("#confirm").addEventListener("click", () => analyzeText($("#ytUrl").value));
-$("#path").addEventListener("focus", (e) => !e.target.value && pickFilePath());
-$("#path-append").addEventListener("click", () => pickFilePath());
+$("#path-append").addEventListener("click", () => $("#path").classList.remove("require") && pickFilePath());
 $("#start").addEventListener("click", () => start());
+
+$("#ytUrl").addEventListener("blur", (e) => checkEmpty(e.target));
+$("#title").addEventListener("blur", (e) => checkEmpty(e.target));
+$("#path").addEventListener("blur", (e) => checkEmpty(e.target));
 
 const handleFocus = () => {
   console.log("ytUrl focusing");
 
   navigator.clipboard.readText().then((text) => text !== $("#ytUrl").value && analyzeText(text));
+};
+
+const checkEmpty = (el, isAll) => {
+  if (isAll) {
+    let flag = true;
+    if (!$("#ytUrl").value) {
+      $("#ytUrl").classList.add("require");
+      flag = false;
+    }
+
+    if (!$("#title").value) {
+      $("#title").classList.add("require");
+      flag = false;
+    }
+
+    if (!$("#path").value) {
+      $("#path").classList.add("require");
+      flag = false;
+    }
+
+    return flag;
+  } else {
+    if (!el.value) {
+      el.classList.add("require");
+    }
+  }
 };
 
 const analyzeText = (text) => {
@@ -123,7 +158,7 @@ const pickFilePath = () => {
 };
 
 const start = () => {
-  // if (!data.$refs.form.validate()) return;
+  if (!checkEmpty(null, true)) return;
   data.isProcessing = true;
   ipcRenderer.send("download", {
     title: data.title,
@@ -134,6 +169,7 @@ const start = () => {
       video: data.vQuality ? data.vQuality.itag : "highestvideo",
     },
   });
+  renderTracker(tracker);
   //
 };
 
@@ -162,4 +198,32 @@ const renderVideoInfo = (videoInfo) => {
   ]);
 
   $("#videoInfo").appendChild(render);
+};
+
+const renderTracker = () => {
+  $("#tracker").innerHTML = "";
+  const render = h("div", { class: ["v-card"] }, [
+    h("h4", null, `開始時間 : ${Date}`),
+    h("p", null, "音訊 :"),
+    h("div", { class: ["audio-progress-wrapper", "progress-wrapper"] }, [
+      h("div", { class: ["progress", "audio-progress"] }),
+    ]),
+    h("p", null, "視訊 :"),
+    h("div", { class: ["video-progress-wrapper", "progress-wrapper"] }, [
+      h("div", { class: ["progress", "video-progress"] }),
+    ]),
+    h("p", { id: "merged" }, `已合併 : 影格 0 速度 0x fps 0`),
+  ]);
+  $("#tracker").appendChild(render);
+};
+
+const updateTracker = (tracker) => {
+  const { audio, video, merged } = tracker;
+
+  const audioP = Number((audio.downloaded / audio.total) * 100).toFixed(3);
+  const videoP = Number((video.downloaded / video.total) * 100).toFixed(3);
+  console.log({ audioP, videoP });
+  $(".audio-progress").style.width = `${audioP}%`;
+  $(".video-progress").style.width = `${videoP}%`;
+  $("#merged").innerText = `已合併 : 影格 ${merged.frame} 速度 ${merged.speed} fps ${merged.fps}`;
 };
