@@ -1,7 +1,11 @@
 module.exports = {
   pluginOptions: {
     electronBuilder: {
-      nodeIntegration: true
+      nodeIntegration: true,
+      builderOptions: {},
+      asar: {
+        asarUnpack: ['node_modules/ffmpeg-static/*']
+      }
     }
   }
 };

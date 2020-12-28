@@ -4,6 +4,8 @@ import { app, protocol, BrowserWindow, ipcMain, dialog } from 'electron';
 import { createProtocol } from 'vue-cli-plugin-electron-builder/lib';
 import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer';
 import { getInfo, start } from '@/controller/ytdl.js';
+import { consola } from 'consola';
+
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
 // Scheme must be registered before the app is ready
@@ -58,7 +60,7 @@ app.on('ready', async () => {
     try {
       await installExtension(VUEJS_DEVTOOLS);
     } catch (e) {
-      console.error('Vue Devtools failed to install:', e.toString());
+      consola.error('Vue Devtools failed to install:', e.toString());
     }
   }
   createWindow();
@@ -84,7 +86,7 @@ ipcMain.on('get-yt-info', async (event, url) => {
     const info = await getInfo(url);
     event.reply('get-yt-info-reply', info);
   } catch (error) {
-    console.error(error);
+    consola.error(error);
   }
 });
 
@@ -101,6 +103,6 @@ ipcMain.on('download', async (event, req) => {
     await start(req, event);
   } catch (error) {
     event.reply('download-fail');
-    console.error(error);
+    consola.error(error);
   }
 });

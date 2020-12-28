@@ -1,12 +1,39 @@
 const ytdl = require('ytdl-core');
 // Buildin with nodejs
 import cp from 'child_process';
-import readline from 'readline';
-import filenamify from 'filenamify';
-// External modules
+import os from 'os';
+import path from 'path';
+const fs = require('fs');
+const { COPYFILE_EXCL } = fs.constants;
+const isDevelopment = process.env.NODE_ENV !== 'production';
+const isWin = os.platform === 'win32';
 
+// External modules
+import filenamify from 'filenamify';
+
+// const appRootDir = require('app-root-dir').get();
 const appRootDir = require('app-root-dir').get();
-const ffmpeg = appRootDir + '\\bin\\ffmpeg\\ffmpeg.exe';
+
+const ffmpegPath = require('ffmpeg-static');
+
+if (isDevelopment) {
+  const dir = path.join(appRootDir, 'dist_electron', 'ffmpeg');
+  console.log(dir);
+  if (!fs.existsSync(`${dir}/`)) {
+    fs.mkdirSync(`${dir}/`);
+  }
+  for (const file of ['index.js', 'install.js', 'package.json']) {
+    fs.copyFileSync(
+      path.join(appRootDir, 'node_modules', 'ffmpeg-static', file),
+      path.join(appRootDir, 'dist_electron', 'ffmpeg', file)
+    );
+  }
+  cp.exec(
+    `node ${path.join(appRootDir, 'dist_electron', 'ffmpeg', 'install.js')}`
+  );
+}
+
+const ffmpeg = ffmpegPath.replace('app.asar', 'app.asar.unpacked');
 
 const getInfo = async url => {
   return await ytdl.getBasicInfo(url);
@@ -15,7 +42,7 @@ const getInfo = async url => {
 const start = async (req, event) => {
   // Global constants
   const { url, title, path, quality } = req;
-  console.log(`${path}/${title}.mp4`);
+  consola.log(`Downloading to: ${path}/${title}.mp4`);
 
   const tracker = {
     start: Date.now(),
@@ -70,7 +97,9 @@ const start = async (req, event) => {
         '-c:v',
         'copy',
         // Define output file
-        `${path}\\${filenamify(title)}.mp4`
+        isWin
+          ? `${path}\\${filenamify(title)}.mp4`
+          : `${path}/${filenamify(title)}.mp4`
       ],
       {
         windowsHide: true,
