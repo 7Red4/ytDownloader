@@ -30,6 +30,105 @@ body {
   justify-content: center;
 }
 
+@for $i from 1 to 15 {
+  .ma-#{$i} {
+    margin-top: $i * 4px;
+    margin-right: $i * 4px;
+    margin-bottom: $i * 4px;
+    margin-left: $i * 4px;
+  }
+  .mx-#{$i} {
+    margin-right: $i * 4px;
+    margin-left: $i * 4px;
+  }
+  .my-#{$i} {
+    margin-top: $i * 4px;
+    margin-bottom: $i * 4px;
+  }
+  .mt-#{$i} {
+    margin-top: $i * 4px;
+  }
+  .mr-#{$i} {
+    margin-right: $i * 4px;
+  }
+  .mb-#{$i} {
+    margin-bottom: $i * 4px;
+  }
+  .ml-#{$i} {
+    margin-left: $i * 4px;
+  }
+
+  .pa-#{$i} {
+    padding-top: $i * 4px;
+    padding-right: $i * 4px;
+    padding-bottom: $i * 4px;
+    padding-left: $i * 4px;
+  }
+  .px-#{$i} {
+    padding-right: $i * 4px;
+    padding-left: $i * 4px;
+  }
+  .py-#{$i} {
+    padding-top: $i * 4px;
+    padding-bottom: $i * 4px;
+  }
+  .pt-#{$i} {
+    padding-top: $i * 4px;
+  }
+  .pr-#{$i} {
+    padding-right: $i * 4px;
+  }
+  .pb-#{$i} {
+    padding-bottom: $i * 4px;
+  }
+  .pl-#{$i} {
+    padding-left: $i * 4px;
+  }
+}
+
+.hide {
+  display: none !important;
+}
+
+.v-progress-circular--indeterminate {
+  & > svg {
+    animation: progress-circular-rotate 1.4s linear infinite;
+    transform-origin: center center;
+    transition: all 0.2s ease-in-out;
+  }
+
+  .v-progress-circular__overlay {
+    animation: progress-circular-dash 1.4s ease-in-out infinite;
+    stroke-linecap: round;
+    stroke-dasharray: 80, 200;
+    stroke-dashoffset: 0px;
+    stroke: #fff;
+  }
+}
+
+@keyframes progress-circular-rotate {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes progress-circular-dash {
+  0% {
+    stroke-dasharray: 1, 200;
+    stroke-dashoffset: 0px;
+  }
+
+  50% {
+    stroke-dasharray: 100, 200;
+    stroke-dashoffset: -15px;
+  }
+
+  to {
+    stroke-dasharray: 100, 200;
+    stroke-dashoffset: -125px;
+  }
+}
+
 input,
 button {
   outline: none;
@@ -173,4 +272,22 @@ button {
   height: 100%;
 
   transition: 0.1s;
+}
+
+#dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background-color: #4a4a4aaa;
+
+  .dialog-content {
+    position: absolute;
+  }
 }

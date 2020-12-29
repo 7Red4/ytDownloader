@@ -1,14 +1,15 @@
 {
   "name": "yt-downloder",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A youtube downloader by ytdl-core",
   "main": "main.js",
   "scripts": {
-    "start": "electron .",
-    "build": "electron-builder"
+    "dev": "cross-env NODE_ENV=development electron .",
+    "build": "cross-env NODE_ENV=production electron-builder"
   },
   "author": "7Red4",
   "devDependencies": {
+    "cross-env": "^7.0.3",
     "electron": "^11.1.0",
     "electron-builder": "^22.9.1",
     "vuetify-scss": "^1.4.0"
@@ -16,7 +17,6 @@
   "dependencies": {
     "app-root-dir": "^1.0.2",
     "consola": "^2.15.0",
-    "cross-env": "^7.0.3",
     "ffmpeg-static": "^4.2.7",
     "filenamify": "^4.2.0",
     "ytdl-core": "^4.2.1"

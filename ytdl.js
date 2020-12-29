@@ -2,17 +2,15 @@ const ytdl = require("ytdl-core");
 // Buildin with nodejs
 const cp = require("child_process");
 const os = require("os");
-const path = require("path");
-const fs = require("fs");
-const isDevelopment = process.env.NODE_ENV !== "production";
 const isWin = os.platform === "win32";
 
 // External modules
 const filenamify = require("filenamify");
 
-// const appRootDir = require('app-root-dir').get();
-
-const ffmpeg = require("ffmpeg-static").replace("app.asar", "app.asar.unpacked");
+const ffmpeg = require("ffmpeg-static").replace(
+  "app.asar",
+  "app.asar.unpacked"
+);
 
 const getInfo = async (url) => {
   return await ytdl.getBasicInfo(url);
@@ -76,7 +74,9 @@ const start = async (req, event) => {
         "-c:v",
         "copy",
         // Define output file
-        isWin ? `${path}\\${filenamify(title)}.mp4` : `${path}/${filenamify(title)}.mp4`,
+        isWin
+          ? `${path}\\${filenamify(title)}.mp4`
+          : `${path}/${filenamify(title)}.mp4`,
       ],
       {
         windowsHide: true,

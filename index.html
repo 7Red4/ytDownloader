@@ -17,6 +17,31 @@
       <button id="confirm" class="btn">確認</button>
     </div>
 
+    <div id="loading" class="hide">
+      <div
+        class="v-progress-circular v-progress-circular--indeterminate ma-5"
+        style="height: 28px; width: 28px; caret-color: #fff"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="22.22222222222222 22.22222222222222 44.44444444444444 44.44444444444444"
+          style="transform: rotate(0deg)"
+        >
+          <circle
+            fill="transparent"
+            cx="44.44444444444444"
+            cy="44.44444444444444"
+            r="20"
+            stroke-width="4.444444444444445"
+            stroke-dasharray="125.664"
+            stroke-dashoffset="125.66370614359172px"
+            class="v-progress-circular__overlay"
+          ></circle>
+        </svg>
+        <div class="v-progress-circular__info"></div>
+      </div>
+    </div>
+
     <div id="videoInfo"></div>
 
     <div>
@@ -35,7 +60,11 @@
 
       <button id="start" class="btn">下載</button>
 
-      <div id="tracker"></div>
+      <div id="dialog" class="hide">
+        <div class="dialog-content">
+          <div id="tracker"></div>
+        </div>
+      </div>
     </div>
 
     <!-- You can also require other files to run in this process -->

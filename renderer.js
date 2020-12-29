@@ -4,13 +4,34 @@
 // `nodeIntegration` is turned off. Use `preload.js` to
 // selectively enable features needed in the rendering
 // process.
+
 const { ipcRenderer, webFrame } = require("electron");
 
 webFrame.insertCSS("./style/main.css");
 
+/*------------------------------------*\
+    $RENDER FUNCTION & BINDING FUNCTION SETTING
+\*------------------------------------*/
+
+const ref = (val, cb) => {
+  return {
+    _v: val,
+    set set(v) {
+      this._v = v;
+      if (cb && typeof cb === "function") {
+        cb(v);
+      }
+    },
+    get val() {
+      return this._v;
+    },
+  };
+};
+
 const h = (tag, attrs, val = []) => {
   const elem = document.createElement(tag);
   attrs = attrs || {};
+
   Object.keys(attrs).forEach((prop) => {
     if (prop === "class") {
       attrs[prop].forEach((className) => elem.classList.add(className));
@@ -26,18 +47,38 @@ const h = (tag, attrs, val = []) => {
       elem.appendChild(child);
     });
   }
+
   return elem;
 };
 
+const $ = (el) => document.querySelector(el);
+
+/*------------------------------------*\
+    $DATA BINDING
+\*------------------------------------*/
+
 const data = {
+  // inputs
   ytUrl: "",
   path: "",
   title: "",
-  loading: false,
+
+  // layout hints
+  loading: ref(false, (v) =>
+    v
+      ? $("#loading").classList.remove("hide")
+      : $("#loading").classList.add("hide")
+  ),
+  isProcessing: ref(false, (v) =>
+    v
+      ? $("#dialog").classList.remove("hide")
+      : $("#dialog").classList.add("hide")
+  ),
+
+  // info
   videoInfo: null,
   vQuality: null,
   aQuality: null,
-  isProcessing: false,
   tracker: {
     start: Date.now(),
     audio: { downloaded: 0, total: Infinity },
@@ -45,8 +86,6 @@ const data = {
     merged: { frame: 0, speed: "0x", fps: 0 },
   },
 };
-
-const $ = (el) => document.querySelector(el);
 
 const binding = () => {
   console.log("binding");
@@ -58,12 +97,14 @@ const binding = () => {
 
 binding();
 
-// ipcRenderer LISTENERS
+/*------------------------------------*\
+    $ipcRenderer LISTENERS
+\*------------------------------------*/
 
 ipcRenderer.on("get-yt-info-reply", (event, info) => {
   data.videoInfo = info;
   data.title = info.videoDetails.title;
-  data.loading = false;
+  data.loading.set = false;
   binding();
   renderVideoInfo(data.videoInfo);
   $("#ytUrl").blur();
@@ -82,24 +123,28 @@ ipcRenderer.on("download-processing", (event, tracker) => {
 });
 
 ipcRenderer.on("download-complete", () => {
-  data.isProcessing = false;
+  data.isProcessing.set = false;
   $(".audio-progress").style.width = `100%`;
   $(".video-progress").style.width = `100%`;
   alert("完成");
 });
 
 ipcRenderer.on("download-fail", () => {
-  data.isProcessing = false;
+  data.isProcessing.set = false;
   alert("完成");
 });
 
-// EVENT LISTENERS
+/*------------------------------------*\
+    $EVENT LISTENERS
+\*------------------------------------*/
 
 $("#ytUrl").addEventListener("focus", (e) => {
   e.target.classList.remove("require");
   handleFocus();
 });
-$("#path").addEventListener("focus", (e) => e.target.classList.remove("require"));
+$("#path").addEventListener("focus", (e) =>
+  e.target.classList.remove("require")
+);
 $("#confirm").addEventListener("click", () => analyzeText($("#ytUrl").value));
 $("#path-append").addEventListener("click", () => {
   $("#path").classList.remove("require");
@@ -107,14 +152,24 @@ $("#path-append").addEventListener("click", () => {
 });
 $("#start").addEventListener("click", () => start());
 
+$("#title").addEventListener("change", (e) => {
+  data.title = e.target.value;
+});
+
 $("#ytUrl").addEventListener("blur", (e) => checkEmpty(e.target));
 $("#title").addEventListener("blur", (e) => checkEmpty(e.target));
 $("#path").addEventListener("blur", (e) => checkEmpty(e.target));
 
+/*------------------------------------*\
+    $METHODS
+\*------------------------------------*/
+
 const handleFocus = () => {
   console.log("ytUrl focusing");
 
-  navigator.clipboard.readText().then((text) => text !== $("#ytUrl").value && analyzeText(text));
+  navigator.clipboard
+    .readText()
+    .then((text) => text !== $("#ytUrl").value && analyzeText(text));
 };
 
 const checkEmpty = (el, isAll) => {
@@ -156,7 +211,7 @@ const analyzeText = (text) => {
 
 const getVideoInfo = (url) => {
   if (!url) return;
-  data.loading = true;
+  data.loading.set = true;
   ipcRenderer.send("get-yt-info", url);
 };
 
@@ -166,7 +221,7 @@ const pickFilePath = () => {
 
 const start = () => {
   if (!checkEmpty(null, true)) return;
-  data.isProcessing = true;
+  data.isProcessing.set = true;
   ipcRenderer.send("download", {
     title: data.title,
     url: data.ytUrl,
@@ -180,7 +235,9 @@ const start = () => {
   //
 };
 
-// TEMPLATE RENDER
+/*------------------------------------*\
+    $COMPONENT
+\*------------------------------------*/
 
 const renderVideoInfo = (videoInfo) => {
   $("#videoInfo").innerHTML = "";
@@ -191,12 +248,18 @@ const renderVideoInfo = (videoInfo) => {
   let title = videoInfo.videoDetails.title;
   title = title.length > 40 ? title.slice(0, 40) + "..." : title;
 
-  let description = videoInfo.videoDetails.description.replace(/\n\s*\n/g, "\n");
-  description = description.length > 40 ? description.slice(0, 40) + "..." : description;
+  let description = videoInfo.videoDetails.description.replace(
+    /\n\s*\n/g,
+    "\n"
+  );
+  description =
+    description.length > 40 ? description.slice(0, 40) + "..." : description;
 
   const render = h("div", { class: ["v-card"] }, [
     h("div", { class: ["v-row"] }, [
-      h("div", { class: ["v-col", "cols-4", "flex-center"] }, [h("img", { src: imgSrc })]),
+      h("div", { class: ["v-col", "cols-4", "flex-center"] }, [
+        h("img", { src: imgSrc }),
+      ]),
       h("div", { class: ["v-col", "cols-8"] }, [
         h("p", { class: ["v-card-title"] }, title),
         h("p", { class: ["v-card-text"] }, description),
@@ -209,6 +272,7 @@ const renderVideoInfo = (videoInfo) => {
 
 const renderTracker = () => {
   $("#tracker").innerHTML = "";
+
   const render = h("div", { class: ["v-card"] }, [
     h("h4", null, `開始時間 : ${new Date()}`),
     h("p", null, "音訊 :"),
@@ -221,7 +285,12 @@ const renderTracker = () => {
     ]),
     h("p", { id: "merged" }, `已合併 : 影格 0 速度 0x fps 0`),
   ]);
+
   $("#tracker").appendChild(render);
+};
+
+const layoutUpdate = () => {
+  //
 };
 
 const updateTracker = (tracker) => {
@@ -232,5 +301,7 @@ const updateTracker = (tracker) => {
   console.log({ audioP, videoP });
   $(".audio-progress").style.width = `${audioP}%`;
   $(".video-progress").style.width = `${videoP}%`;
-  $("#merged").innerText = `已合併 : 影格 ${merged.frame} 速度 ${merged.speed} fps ${merged.fps}`;
+  $(
+    "#merged"
+  ).innerText = `已合併 : 影格 ${merged.frame} 速度 ${merged.speed} fps ${merged.fps}`;
 };

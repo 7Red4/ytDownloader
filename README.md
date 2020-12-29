@@ -2,7 +2,7 @@
 
 可以下載 youtube 影片的跨平台桌面應用程式
 
-- ## 使用方法
+## 使用方法
 
 ![](https://i.imgur.com/D2kOszT.png)
 
@@ -12,10 +12,11 @@
 - 按下載!
 - 等他好
 
-- ## 功能
+## 功能
+
 - 下載 youtube 影片
 
-- ## 要做的功能
+## 要做的功能
 
 - 下載首圖
 - 選擇畫質與音質（目前都是選只選最高）
@@ -23,13 +24,14 @@
 - 直播中也可下載
 
 ---
+
 for English
 
 # YT downloader
 
 A cross-platform desktop app for downloading youtube videos
 
-- ## USAGE
+## USAGE
 
 ![](https://i.imgur.com/D2kOszT.png)
 
@@ -39,10 +41,11 @@ A cross-platform desktop app for downloading youtube videos
 - Click download!
 - Take a seat and have some coffee till it's done.
 
-- ## FEATURE
+## FEATURE
+
 - Download youtube video
 
-- ## TO DO FEATURE
+## TO DO FEATURE
 
 - Download thumbnail
 - Pick resolution (now can only get highest of video and audio)
