@@ -13,7 +13,6 @@
 - 等他好
 
 ## 功能
-
 - 下載 youtube 影片
 
 ## 要做的功能
@@ -24,7 +23,6 @@
 - 直播中也可下載
 
 ---
-
 for English
 
 # YT downloader
@@ -42,7 +40,6 @@ A cross-platform desktop app for downloading youtube videos
 - Take a seat and have some coffee till it's done.
 
 ## FEATURE
-
 - Download youtube video
 
 ## TO DO FEATURE
@@ -51,3 +48,24 @@ A cross-platform desktop app for downloading youtube videos
 - Pick resolution (now can only get highest of video and audio)
 - Download video/audio only
 - Download while it's even in streaming
+
+---
+
+# For Dev 給開發
+
+# 環境需求 enviorment require
+node js
+
+# 套件安裝 install dependecies
+npm install
+
+# 啟動 run dev
+npm run dev
+
+# 打包 build
+npm run build
+
+#### PS
+樣式內的 scss 是用 vs code 的 [live sass compiler]( https://marketplace.visualstudio.com/items?itemName=ritwickdey.live-sass ) 的擴充編譯的 不要傻傻的想說改了 scss 怎麼沒用 真正吃到的是編出來的 css 的樣式
+
+scss is compiled by [live sass compiler]( https://marketplace.visualstudio.com/items?itemName=ritwickdey.live-sass ) the vs code extention
