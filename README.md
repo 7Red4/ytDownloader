@@ -2,6 +2,8 @@
 
 可以下載 youtube 影片的跨平台桌面應用程式
 
+[download 載點](https://drive.google.com/drive/folders/1kTFlqU2rykcEzeVu3S6qhHtHqzF1y1sq?usp=sharing)
+
 ## 使用方法
 
 ![](https://i.imgur.com/D2kOszT.png)
