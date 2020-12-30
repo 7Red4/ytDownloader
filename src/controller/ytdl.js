@@ -9,7 +9,6 @@ const isWin = os.platform === 'win32';
 // External modules
 import filenamify from 'filenamify';
 
-// const appRootDir = require('app-root-dir').get();
 const appRootDir = require('app-root-dir').get();
 
 const ffmpeg = path.join(

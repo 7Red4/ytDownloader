@@ -4,10 +4,10 @@
   "description": "A youtube downloader by ytdl-core",
   "private": true,
   "scripts": {
-    "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build",
+    "vues": "vue-cli-service serve",
+    "vueb": "vue-cli-service build",
     "lint": "vue-cli-service lint",
-    "eb": "vue-cli-service electron:build",
+    "build": "vue-cli-service electron:build",
     "dev": "vue-cli-service electron:serve",
     "postinstall": "electron-builder install-app-deps",
     "postuninstall": "electron-builder install-app-deps"

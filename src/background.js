@@ -5,9 +5,6 @@ import { createProtocol } from 'vue-cli-plugin-electron-builder/lib';
 import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer';
 import { getInfo, start } from '@/controller/ytdl.js';
 import { consola } from 'consola';
-import ffmpeg from 'ffmpeg-static';
-
-console.log(ffmpeg);
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
@@ -19,7 +16,7 @@ protocol.registerSchemesAsPrivileged([
 async function createWindow() {
   // Create the browser window.
   const win = new BrowserWindow({
-    width: 1240,
+    width: isDevelopment ? 1240 : 810,
     height: 960,
     webPreferences: {
       // Use pluginOptions.nodeIntegration, leave this alone
