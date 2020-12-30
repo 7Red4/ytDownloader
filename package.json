@@ -1,8 +1,8 @@
 {
-  "name": "yt-downloder",
-  "version": "1.0.1",
+  "name": "yt-downloader",
+  "version": "1.1.0",
   "description": "A youtube downloader by ytdl-core",
-  "main": "main.js",
+  "private": true,
   "scripts": {
     "dev": "cross-env NODE_ENV=development electron .",
     "build": "cross-env NODE_ENV=production electron-builder"
@@ -21,11 +21,29 @@
     "filenamify": "^4.2.0",
     "ytdl-core": "^4.2.1"
   },
-  "build": {
-    "asarUnpack": [
-      "node_modules/ffmpeg-static/bin/${os}/${arch}/ffmpeg",
-      "node_modules/ffmpeg-static/index.js",
-      "node_modules/ffmpeg-static/package.json"
-    ]
-  }
+  "devDependencies": {
+    "@vue/cli-plugin-babel": "~4.5.0",
+    "@vue/cli-plugin-eslint": "~4.5.0",
+    "@vue/cli-plugin-router": "~4.5.0",
+    "@vue/cli-plugin-vuex": "~4.5.0",
+    "@vue/cli-service": "~4.5.0",
+    "@vue/eslint-config-prettier": "^6.0.0",
+    "babel-eslint": "^10.1.0",
+    "electron": "^11.0.0",
+    "electron-devtools-installer": "^3.1.0",
+    "eslint": "^6.7.2",
+    "eslint-plugin-prettier": "^3.1.3",
+    "eslint-plugin-vue": "^6.2.2",
+    "node-sass": "^4.12.0",
+    "prettier": "^1.19.1",
+    "sass-loader": "^8.0.2",
+    "vue-cli-plugin-electron-builder": "~2.0.0-rc.5",
+    "vue-cli-plugin-vuetify": "~2.0.8",
+    "vue-template-compiler": "^2.6.11"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ]
 }
