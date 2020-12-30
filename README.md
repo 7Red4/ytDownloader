@@ -6,7 +6,7 @@
 
 ## 使用方法
 
-![](https://i.imgur.com/D2kOszT.png)
+![](https://i.imgur.com/e35m6KU.png)
 
 - 輸入 youtub 連結 (如果你的剪貼簿有連結則會在進入輸入欄時自動帶入)
 - 更改標題作為檔名 (預設為原片標題)
@@ -17,7 +17,7 @@
 ## 功能
 
 - 下載 youtube 影片
-- 選擇畫質與音質（目前都是選只選最高）
+- 選擇畫質與音質
 - 開/關燈模式
 
 ## 要做的功能
@@ -36,7 +36,7 @@ A cross-platform desktop app for downloading youtube videos
 
 ## USAGE
 
-![](https://i.imgur.com/D2kOszT.png)
+![](https://i.imgur.com/e35m6KU.png)
 
 - Enter a youtube url. (It will auto fill the field if your clipboad has a youtube url)
 - Change the file name of the clip to save. (default to the origin title)
@@ -47,7 +47,7 @@ A cross-platform desktop app for downloading youtube videos
 ## FEATURE
 
 - Download youtube video
-- Pick resolution (now can only get highest of video and audio)
+- Pick resolution
 - Light / dark mode
 
 ## TO DO FEATURE
@@ -58,26 +58,34 @@ A cross-platform desktop app for downloading youtube videos
 
 ---
 
+---
+
+---
+
 # For Dev 給開發
 
-# 環境需求 enviorment require
+This project is using [`electron js`](https://www.electronjs.org/) with [`vue js`](https://vuejs.org/) built by [`vue-cli-plugin-electron-builder`](https://nklayman.github.io/vue-cli-plugin-electron-builder/) and [`Vuetify`](https://vuetifyjs.com/en/) as UI components
 
+## 環境需求 enviorment require
+
+```
 node js
+```
 
-# 套件安裝 install dependecies
+## 套件安裝 install dependecies
 
+```
 npm install
+```
 
-# 啟動 run dev
+## 啟動 run dev
 
+```
 npm run dev
+```
 
-# 打包 build
+## 打包 build
 
+```
 npm run build
-
-#### PS
-
-樣式內的 scss 是用 vs code 的 [live sass compiler](https://marketplace.visualstudio.com/items?itemName=ritwickdey.live-sass) 的擴充編譯的 不要傻傻的想說改了 scss 怎麼沒用 真正吃到的是編出來的 css 的樣式
-
-scss is compiled by [live sass compiler](https://marketplace.visualstudio.com/items?itemName=ritwickdey.live-sass) the vs code extention
+```
