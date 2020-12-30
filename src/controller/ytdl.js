@@ -4,8 +4,6 @@ import cp from 'child_process';
 import os from 'os';
 import path from 'path';
 const fs = require('fs');
-const { COPYFILE_EXCL } = fs.constants;
-const isDevelopment = process.env.NODE_ENV !== 'production';
 const isWin = os.platform === 'win32';
 
 // External modules
@@ -14,26 +12,12 @@ import filenamify from 'filenamify';
 // const appRootDir = require('app-root-dir').get();
 const appRootDir = require('app-root-dir').get();
 
-const ffmpegPath = require('ffmpeg-static');
-
-if (isDevelopment) {
-  const dir = path.join(appRootDir, 'dist_electron', 'ffmpeg');
-  console.log(dir);
-  if (!fs.existsSync(`${dir}/`)) {
-    fs.mkdirSync(`${dir}/`);
-  }
-  for (const file of ['index.js', 'install.js', 'package.json']) {
-    fs.copyFileSync(
-      path.join(appRootDir, 'node_modules', 'ffmpeg-static', file),
-      path.join(appRootDir, 'dist_electron', 'ffmpeg', file)
-    );
-  }
-  cp.exec(
-    `node ${path.join(appRootDir, 'dist_electron', 'ffmpeg', 'install.js')}`
-  );
-}
-
-const ffmpeg = ffmpegPath.replace('app.asar', 'app.asar.unpacked');
+const ffmpeg = path.join(
+  appRootDir,
+  'node_modules',
+  'ffmpeg-static',
+  os.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg'
+);
 
 const getInfo = async url => {
   return await ytdl.getBasicInfo(url);

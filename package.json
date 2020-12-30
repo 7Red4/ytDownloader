@@ -1,6 +1,6 @@
 {
-  "name": "ytdl",
-  "version": "1.0.0",
+  "name": "yt-downloader",
+  "version": "1.1.0",
   "description": "",
   "private": true,
   "scripts": {
@@ -39,7 +39,7 @@
     "@vue/cli-service": "~4.5.0",
     "@vue/eslint-config-prettier": "^6.0.0",
     "babel-eslint": "^10.1.0",
-    "electron": "^9.0.0",
+    "electron": "^11.0.0",
     "electron-devtools-installer": "^3.1.0",
     "eslint": "^6.7.2",
     "eslint-plugin-prettier": "^3.1.3",
