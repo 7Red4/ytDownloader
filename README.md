@@ -19,12 +19,12 @@
 - 下載 youtube 影片
 - 選擇畫質與音質
 - 開/關燈模式
+- 直播中也可下載
 
 ## 要做的功能
 
 - 下載首圖
 - 只下載 音/視訊
-- 直播中也可下載
 
 ---
 
@@ -49,12 +49,12 @@ A cross-platform desktop app for downloading youtube videos
 - Download youtube video
 - Pick resolution
 - Light / dark mode
+- Download while it's even in streaming
 
 ## TO DO FEATURE
 
 - Download thumbnail
 - Download video/audio only
-- Download while it's even in streaming
 
 ---
 

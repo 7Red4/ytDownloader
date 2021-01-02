@@ -19,6 +19,10 @@
       ></v-progress-circular>
 
       <template v-if="!!videoInfo && !loading">
+        <p v-if="isLive">
+          <v-icon size="16" color="red">mdi-circle</v-icon>
+          直播中
+        </p>
         <v-card class="mb-10">
           <v-row align="center" class="px-3">
             <v-col cols="4">
@@ -65,7 +69,9 @@
             outlined
           ></v-text-field>
 
-          <p>都不選擇時 預設皆為最高</p>
+          <p class="grey--text text-body-2">
+            都不選擇時 預設皆為最高 直播中無法選擇音質
+          </p>
 
           <v-menu max-height="400">
             <template #activator="{ on }">
@@ -82,10 +88,7 @@
             <v-list>
               <v-list-item-group v-model="vQuality" label="選擇畫質">
                 <v-list-item
-                  v-for="(format,
-                  i) in videoInfo.formats.filter(({ mimeType }) =>
-                    /video/.test(mimeType)
-                  )"
+                  v-for="(format, i) in vQualities"
                   :key="i"
                   :value="format"
                   two-line
@@ -106,7 +109,7 @@
             </v-list>
           </v-menu>
 
-          <v-menu max-height="400">
+          <v-menu max-height="400" v-if="!isLive">
             <template #activator="{ on }">
               <v-text-field
                 v-on="on"
@@ -121,10 +124,7 @@
             <v-list>
               <v-list-item-group v-model="aQuality" label="選擇音質">
                 <v-list-item
-                  v-for="(format,
-                  i) in videoInfo.formats.filter(({ mimeType }) =>
-                    /audio/.test(mimeType)
-                  )"
+                  v-for="(format, i) in aQualities"
                   :key="i"
                   :value="format"
                   two-line
@@ -143,42 +143,63 @@
           </v-menu>
         </v-form>
 
-        <v-btn color="success" @click="start">下載</v-btn>
+        <v-btn color="success" @click="start">
+          {{ isLive ? '錄影' : '下載' }}
+        </v-btn>
       </template>
     </v-container>
 
     <v-dialog v-model="isProcessing" persistent max-width="800">
       <v-card v-if="tracker">
-        <v-card-title>
-          下載中
-        </v-card-title>
+        <v-card-title>{{ isLive ? '錄製' : '下載' }}中</v-card-title>
         <v-card-text>
           開始時間: {{ tracker.start }}
           <br />
           <br />
-          音訊:
-          <br />
-          <v-progress-linear
-            color="cyan"
-            height="25"
-            :value="(tracker.audio.downloaded / tracker.audio.total) * 100"
-          ></v-progress-linear>
-          <br />
-          視訊:
-          <br />
-          <v-progress-linear
-            color="success"
-            height="25"
-            :value="(tracker.video.downloaded / tracker.video.total) * 100"
-          ></v-progress-linear>
+          <template v-if="!isLive">
+            音訊:
+            <br />
+            <v-progress-linear
+              color="cyan"
+              height="25"
+              :value="(tracker.audio.downloaded / tracker.audio.total) * 100"
+            ></v-progress-linear>
+            <br />
+            視訊:
+            <br />
+            <v-progress-linear
+              color="success"
+              height="25"
+              :value="(tracker.video.downloaded / tracker.video.total) * 100"
+            ></v-progress-linear>
+          </template>
           <br />
           <p>
             已合併:影格 {{ tracker.merged.frame }}, 速度
             {{ tracker.merged.speed }}, fps {{ tracker.merged.fps }}
           </p>
+          <v-progress-circular
+            indeterminate
+            color="primary"
+          ></v-progress-circular>
+          <br />
+          時間經過 : {{ HHMMSS }}
         </v-card-text>
+        <v-card-actions v-if="isLive">
+          <v-btn color="error" @click="stop" text>中止錄影</v-btn>
+        </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <v-snackbar v-model="snack" dark @input="v => !v && (snackMsg = '')">
+      <div class="d-flex align-center">
+        {{ snackMsg }}
+        <v-spacer></v-spacer>
+        <v-btn text icon color="error" @click.native="snack = false">
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
+      </div>
+    </v-snackbar>
   </div>
 </template>
 
@@ -195,20 +216,38 @@ export default {
       path: '',
       title: '',
       loading: false,
+      snack: false,
+      snackMsg: '',
       videoInfo: null,
       vQuality: null,
       aQuality: null,
       isProcessing: false,
+      timer: null,
       tracker: {
         start: new Date(),
         audio: { downloaded: 0, total: Infinity },
         video: { downloaded: 0, total: Infinity },
         merged: { frame: 0, speed: '0x', fps: 0 }
-      }
+      },
+      seconds: 0
     };
   },
 
   computed: {
+    vQualities() {
+      return this.videoInfo
+        ? this.videoInfo.formats.filter(({ mimeType }) =>
+            /video/.test(mimeType)
+          )
+        : [];
+    },
+    aQualities() {
+      return this.videoInfo
+        ? this.videoInfo.formats.filter(({ mimeType }) =>
+            /audio/.test(mimeType)
+          )
+        : [];
+    },
     vQualityText() {
       return this.vQuality
         ? `${this.vQuality.qualityLabel || ''} - ${this.vQuality.mimeType}`
@@ -216,12 +255,29 @@ export default {
     },
     aQualityText() {
       return this.aQuality ? `${this.aQuality.mimeType}` : '';
+    },
+
+    isLive() {
+      return this.videoInfo && this.videoInfo.videoDetails.isLive;
+    },
+    HHMMSS() {
+      return new Date(this.seconds * 1000).toISOString().substr(11, 8);
     }
   },
 
   watch: {
     videoInfo(v) {
       v && (this.title = filenamify(v.videoDetails.title));
+    },
+    isProcessing(v) {
+      if (v) {
+        this.seconds = 0;
+        this.timer = setInterval(() => {
+          this.seconds++;
+        }, 1000);
+      } else {
+        clearInterval(this.timer);
+      }
     }
   },
 
@@ -241,8 +297,14 @@ export default {
       this.tracker.video = tracker.video;
       this.tracker.merged = tracker.merged;
     });
-    ipcRenderer.on('download-complete', () => (this.isProcessing = false));
-    ipcRenderer.on('download-fail', () => (this.isProcessing = false));
+    ipcRenderer.on('download-complete', () => {
+      this.isProcessing = false;
+    });
+    ipcRenderer.on('download-fail', (event, error) => {
+      this.snackMsg = error;
+      this.snack = true;
+      this.isProcessing = false;
+    });
   },
 
   methods: {
@@ -261,7 +323,7 @@ export default {
       if (isUrl && hasYoutube) {
         this.ytUrl = text;
         this.getVideoInfo(text);
-        e.traget.blur();
+        e && e.target.blur();
       }
     },
     getVideoInfo(url) {
@@ -285,8 +347,17 @@ export default {
           video: this.vQuality ? this.vQuality.itag : 'highestvideo'
         }
       });
-      this.tracker.start = new Date();
-      //
+
+      this.tracker = {
+        start: new Date(),
+        audio: { downloaded: 0, total: Infinity },
+        video: { downloaded: 0, total: Infinity },
+        merged: { frame: 0, speed: '0x', fps: 0 }
+      };
+    },
+
+    stop() {
+      ipcRenderer.send('exit');
     }
   }
 };

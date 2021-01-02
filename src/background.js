@@ -3,8 +3,8 @@
 import { app, protocol, BrowserWindow, ipcMain, dialog } from 'electron';
 import { createProtocol } from 'vue-cli-plugin-electron-builder/lib';
 import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer';
-import { getInfo, start } from '@/controller/ytdl.js';
-import { consola } from 'consola';
+import { getInfo, start, record } from '@/controller/ytdl.js';
+import consola from 'consola';
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
@@ -103,6 +103,15 @@ ipcMain.on('download', async (event, req) => {
     await start(req, event);
   } catch (error) {
     event.reply('download-fail');
+    consola.error(error);
+  }
+});
+
+ipcMain.on('exit', async (event, req) => {
+  try {
+    await record.stop();
+  } catch (error) {
+    event.reply('stoped-error');
     consola.error(error);
   }
 });
