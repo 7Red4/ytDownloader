@@ -11,6 +11,7 @@ import consola from 'consola';
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
+let win = {};
 // Scheme must be registered before the app is ready
 protocol.registerSchemesAsPrivileged([
   { scheme: 'app', privileges: { secure: true, standard: true } }
@@ -18,7 +19,8 @@ protocol.registerSchemesAsPrivileged([
 
 async function createWindow() {
   // Create the browser window.
-  const win = new BrowserWindow({
+  win = new BrowserWindow({
+    frame: false,
     width: isDevelopment ? 1240 : 810,
     height: 960,
     titleBarStyle: 'hidden',
@@ -86,6 +88,13 @@ if (isDevelopment) {
 }
 
 // ipc events
+ipcMain.on('minimize-window', () => win.minimize && win.minimize());
+ipcMain.on('toggle-window', () =>
+  win.isMaximized() ? win.unmaximize() : win.maximize()
+);
+ipcMain.on('close-window', () => {
+  process.exit(0);
+});
 
 ipcMain.on('get-yt-info', async (event, url) => {
   try {

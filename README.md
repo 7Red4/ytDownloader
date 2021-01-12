@@ -20,8 +20,8 @@
 - [x] 選擇畫質與音質
 - [x] 開/關燈模式
 - [x] 直播中也可下載
+- [x] 下載首圖
 
-- [ ] 下載首圖
 - [ ] 只下載 音/視訊
 - [ ] 大量下載
 
@@ -49,8 +49,8 @@ A cross-platform desktop app for downloading youtube videos
 - [x] Pick resolution
 - [x] Light / dark mode
 - [x] Download while it's even in streaming
+- [x] Download thumbnail
 
-- [ ] Download thumbnail
 - [ ] Download video/audio only
 - [ ] Multiple download
 

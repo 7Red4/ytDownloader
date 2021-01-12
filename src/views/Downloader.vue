@@ -239,7 +239,7 @@
 </template>
 
 <script>
-import { ipcRenderer, remote } from 'electron';
+import { ipcRenderer } from 'electron';
 import filenamify from 'filenamify';
 
 export default {
@@ -334,12 +334,12 @@ export default {
     );
 
     ipcRenderer.on('pick-thumbnail-path-reply', (event, path) => {
-      console.log(path);
       this.tumbnailPath = path || '';
       this.downloadTumbnail();
     });
 
     ipcRenderer.on('download-thumbnail-complete', (event, res) => {
+      this.isThumbnailDownloadDialogOpen = false;
       this.snackMsg = '下載完成';
       this.snack = true;
     });

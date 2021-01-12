@@ -2,13 +2,12 @@ import lowdb from 'lowdb';
 import FileSync from 'lowdb/adapters/FileSync';
 import path from 'path';
 import { remote } from 'electron';
-import Vue from 'vue';
 
 const isDev = process.env.NODE_ENV === 'development';
 const DB = {
   install(Vue, options) {
     if (!options) {
-      options = { name: 'settings.json' };
+      options = { name: 'db.json' };
     }
 
     let dbPath;
@@ -26,5 +25,3 @@ const DB = {
 };
 
 export default DB;
-
-Vue.use(DB);

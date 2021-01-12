@@ -1,6 +1,22 @@
 <template>
   <v-app dark>
-    <v-app-bar color="primary" app class="mt-4">
+    <v-system-bar color="primary" class="elevation-0" app>
+      <v-icon>mdi-youtube</v-icon>
+
+      <v-spacer></v-spacer>
+      <v-btn text @click="minimizeWindow">
+        <v-icon>mdi-minus</v-icon>
+      </v-btn>
+      <v-btn text @click="toggleWindow">
+        <v-icon>
+          mdi-checkbox{{ isMaximized ? '-multiple' : '' }}-blank-outline
+        </v-icon>
+      </v-btn>
+      <v-btn text @click="closeWindow">
+        <v-icon>mdi-close</v-icon>
+      </v-btn>
+    </v-system-bar>
+    <v-app-bar color="primary" class="elevation-0" app>
       <v-tabs color="white">
         <v-tab to="/">
           <span class="title white--text">
@@ -34,10 +50,16 @@
 </template>
 
 <script>
-import { Color, RGBA } from 'custom-electron-titlebar';
+import { ipcRenderer } from 'electron';
 
 export default {
   name: 'App',
+
+  data() {
+    return {
+      isMaximized: false
+    };
+  },
 
   watch: {
     '$vuetify.theme.dark': {
@@ -45,10 +67,6 @@ export default {
         this.handleChangeDark(v);
       }
     }
-  },
-
-  created() {
-    this.$titlebar.updateTitle('YT 下載器');
   },
 
   mounted() {
@@ -60,8 +78,16 @@ export default {
   methods: {
     handleChangeDark(v) {
       this.$db.set('dark', v).write();
-      const primary = this.$vuetify.theme.themes[v ? 'dark' : 'light'].primary;
-      this.$titlebar.updateBackground(Color.fromHex(primary));
+    },
+    minimizeWindow() {
+      ipcRenderer.send('minimize-window');
+    },
+    toggleWindow() {
+      ipcRenderer.send('toggle-window');
+      this.isMaximized = !this.isMaximized;
+    },
+    closeWindow() {
+      ipcRenderer.send('close-window');
     }
   }
 };
