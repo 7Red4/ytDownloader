@@ -1,5 +1,8 @@
 'use strict';
 
+import fs from 'fs';
+import https from 'https';
+
 import { app, protocol, BrowserWindow, ipcMain, dialog } from 'electron';
 import { createProtocol } from 'vue-cli-plugin-electron-builder/lib';
 import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer';
@@ -18,6 +21,7 @@ async function createWindow() {
   const win = new BrowserWindow({
     width: isDevelopment ? 1240 : 810,
     height: 960,
+    titleBarStyle: 'hidden',
     webPreferences: {
       // Use pluginOptions.nodeIntegration, leave this alone
       // See nklayman.github.io/vue-cli-plugin-electron-builder/guide/security.html#node-integration for more info
@@ -81,6 +85,8 @@ if (isDevelopment) {
   }
 }
 
+// ipc events
+
 ipcMain.on('get-yt-info', async (event, url) => {
   try {
     const info = await getInfo(url);
@@ -112,6 +118,33 @@ ipcMain.on('exit', async (event, req) => {
     await record.stop();
   } catch (error) {
     event.reply('stoped-error');
+    consola.error(error);
+  }
+});
+
+ipcMain.on('pick-thumbnail-path', async (event, title) => {
+  try {
+    const path = dialog.showSaveDialogSync({
+      defaultPath: title,
+      filters: [{ name: 'Images', extensions: ['jpg', 'png'] }]
+    });
+    event.reply('pick-thumbnail-path-reply', path);
+  } catch (error) {
+    consola.error(error);
+  }
+});
+
+ipcMain.on('download-thumbnail', async (event, { url, path }) => {
+  try {
+    const file = fs.createWriteStream(path);
+    https.get(url, response => {
+      response.pipe(file);
+      response.on('close', () => {
+        event.reply('download-thumbnail-complete');
+      });
+    });
+  } catch (error) {
+    event.reply('download-thumbnail-fail', error);
     consola.error(error);
   }
 });

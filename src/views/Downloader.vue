@@ -23,7 +23,7 @@
           <v-icon size="16" color="red">mdi-circle</v-icon>
           直播中
         </p>
-        <v-card class="mb-10">
+        <v-card class="video_info_card mb-10">
           <v-row align="center" class="px-3">
             <v-col cols="4">
               <v-img
@@ -50,6 +50,20 @@
               </v-card-text>
             </v-col>
           </v-row>
+
+          <v-menu min-width="200" :nudge-top="16" offset-y left>
+            <template #activator="{ on }">
+              <v-btn v-on="on" class="video_info_card-more" icon>
+                <v-icon>mdi-dots-vertical</v-icon>
+              </v-btn>
+            </template>
+
+            <v-list>
+              <v-list-item @click="isThumbnailDownloadDialogOpen = true">
+                下載首圖
+              </v-list-item>
+            </v-list>
+          </v-menu>
         </v-card>
 
         <v-form ref="form">
@@ -191,6 +205,27 @@
       </v-card>
     </v-dialog>
 
+    <v-dialog
+      v-model="isThumbnailDownloadDialogOpen"
+      max-width="500px"
+      transition="dialog-transition"
+    >
+      <v-card>
+        <v-card-title>
+          選擇解析度 (寬 x 高)
+        </v-card-title>
+        <v-list v-if="videoInfo && videoInfo.videoDetails.thumbnails.length">
+          <v-list-item
+            v-for="resolution in videoInfo.videoDetails.thumbnails"
+            :key="resolution.url"
+            @click="pickThumbnailPath(resolution.url)"
+          >
+            {{ resolution.width }} x {{ resolution.height }}
+          </v-list-item>
+        </v-list>
+      </v-card>
+    </v-dialog>
+
     <v-snackbar v-model="snack" dark @input="v => !v && (snackMsg = '')">
       <div class="d-flex align-center">
         {{ snackMsg }}
@@ -213,7 +248,9 @@ export default {
   data() {
     return {
       ytUrl: '',
-      path: '',
+      path: this.$db.get('dl_path').value() || '',
+      tumbnailPath: '',
+      thumbnailURL: '',
       title: '',
       loading: false,
       snack: false,
@@ -222,6 +259,7 @@ export default {
       vQuality: null,
       aQuality: null,
       isProcessing: false,
+      isThumbnailDownloadDialogOpen: false,
       timer: null,
       tracker: {
         start: new Date(),
@@ -278,6 +316,9 @@ export default {
       } else {
         clearInterval(this.timer);
       }
+    },
+    path(v) {
+      this.$db.set('dl_path', v).write();
     }
   },
 
@@ -291,6 +332,22 @@ export default {
       'pick-path-reply',
       (event, path) => (this.path = !path.canceled ? path.filePaths[0] : '')
     );
+
+    ipcRenderer.on('pick-thumbnail-path-reply', (event, path) => {
+      console.log(path);
+      this.tumbnailPath = path || '';
+      this.downloadTumbnail();
+    });
+
+    ipcRenderer.on('download-thumbnail-complete', (event, res) => {
+      this.snackMsg = '下載完成';
+      this.snack = true;
+    });
+
+    ipcRenderer.on('download-thumbnail-fail', (event, res) => {
+      this.snackMsg = '下載失敗';
+      this.snack = true;
+    });
 
     ipcRenderer.on('download-processing', (event, tracker) => {
       this.tracker.audio = tracker.audio;
@@ -331,6 +388,21 @@ export default {
       this.loading = true;
       ipcRenderer.send('get-yt-info', url);
     },
+    pickThumbnailPath(url) {
+      this.thumbnailURL = url;
+      ipcRenderer.send('pick-thumbnail-path', this.title);
+    },
+    downloadTumbnail() {
+      if (!this.tumbnailPath) {
+        this.snackMsg = '請選擇路徑';
+        this.snack = true;
+        return;
+      }
+      ipcRenderer.send('download-thumbnail', {
+        url: this.thumbnailURL,
+        path: this.tumbnailPath
+      });
+    },
     pickFilePath() {
       ipcRenderer.send('pick-path');
     },
@@ -362,3 +434,14 @@ export default {
   }
 };
 </script>
+
+<style lang="scss" scoped>
+.video_info_card {
+  position: relative;
+  .video_info_card-more {
+    position: absolute;
+    top: 4px;
+    right: 6px;
+  }
+}
+</style>
