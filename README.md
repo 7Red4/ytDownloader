@@ -2,7 +2,9 @@
 
 可以下載 youtube 影片的跨平台桌面應用程式
 
-[download 載點](https://drive.google.com/drive/folders/1kTFlqU2rykcEzeVu3S6qhHtHqzF1y1sq?usp=sharing)
+ver 1.3.0
+[windows download 載點](/release/1.3.0/win/yt-downloader%20Setup%201.3.0.exe)
+[mac download 載點](/release/1.3.0/mac/)
 
 ## 使用方法
 
@@ -16,6 +18,7 @@
 
 ## 功能
 
+### Downloader
 - [x] 下載 youtube 影片
 - [x] 選擇畫質與音質
 - [x] 開/關燈模式
@@ -24,6 +27,11 @@
 
 - [ ] 只下載 音/視訊
 - [ ] 大量下載
+
+### Player
+- [ ] 透過時間標籤製作歌單
+- [ ] 儲存歌單
+- [ ] 分享歌單
 
 ---
 
@@ -45,6 +53,8 @@ A cross-platform desktop app for downloading youtube videos
 
 ## FEATURE
 
+### Downloader
+
 - [x] Download youtube video
 - [x] Pick resolution
 - [x] Light / dark mode
@@ -53,6 +63,11 @@ A cross-platform desktop app for downloading youtube videos
 
 - [ ] Download video/audio only
 - [ ] Multiple download
+
+### Player
+- [ ] create playlist by timestamps
+- [ ] save playlist
+- [ ] share playlist
 
 ---
 
