@@ -1,3 +1,13 @@
-  ::-webkit-scrollbar {
-    width: 0;
+@import url('../css/roboto/roboto-fontface.css');
+@import url('./NotoSansTC.scss');
+@import url('./variables.scss');
+
+::-webkit-scrollbar {
+  width: 0;
+}
+
+.v-application {
+  *:not(.mdi) {
+    font-family: 'Noto Sans TC', Roboto, sans-serif !important;
   }
+}
