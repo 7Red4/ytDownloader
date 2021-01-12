@@ -3,7 +3,9 @@
 可以下載 youtube 影片的跨平台桌面應用程式
 
 ver 1.3.0
-[windows download 載點](/release/1.3.0/win/yt-downloader%20Setup%201.3.0.exe)
+
+[windows download 載點](/release/1.3.0/win/yt-downloader%20Setup%201.3.0.exe?raw=true)
+
 [mac download 載點](/release/1.3.0/mac/)
 
 ## 使用方法
