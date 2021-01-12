@@ -1,6 +1,6 @@
 <template>
   <v-app dark>
-    <v-system-bar color="primary" class="elevation-0" app>
+    <v-system-bar color="primary darken-1" class="elevation-0" app>
       <v-icon>mdi-youtube</v-icon>
 
       <v-spacer style="height: 100%; -webkit-app-region: drag"></v-spacer>
@@ -17,15 +17,15 @@
       </v-btn>
     </v-system-bar>
     <v-app-bar color="primary" class="elevation-0" app>
-      <v-tabs color="white">
+      <v-tabs color="white" centered>
         <v-tab to="/">
-          <span class="title white--text">
+          <span class="text-h6 white--text">
             <v-icon>mdi-youtube</v-icon>
             下載器
           </span>
         </v-tab>
         <v-tab to="/Player">
-          <span class="title white--text">
+          <span class="text-h6 white--text">
             <v-icon>mdi-play-circle-outline</v-icon>
             播放器
           </span>
