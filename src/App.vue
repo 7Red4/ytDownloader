@@ -3,7 +3,7 @@
     <v-system-bar color="primary" class="elevation-0" app>
       <v-icon>mdi-youtube</v-icon>
 
-      <v-spacer></v-spacer>
+      <v-spacer style="height: 100%; -webkit-app-region: drag"></v-spacer>
       <v-btn text @click="minimizeWindow">
         <v-icon>mdi-minus</v-icon>
       </v-btn>
