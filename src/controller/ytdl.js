@@ -50,7 +50,7 @@ const record = {
       this.event.reply('download-processing', tracker);
     });
 
-    this.video.pipe(fs.createWriteStream(`${this.path}/pending_v.ts`));
+    this.video.pipe(fs.createWriteStream(PATH.join(this.path, 'pending_v.ts')));
   },
   stop() {
     if (this.video) this.video.destroy();

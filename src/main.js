@@ -12,12 +12,6 @@ import './assets/style/main.scss';
 Vue.config.productionTip = false;
 Vue.use(DB);
 
-ipcRenderer.on('get-platform-reply', (event, platform) => {
-  Vue.prototype.$platform = platform;
-});
-
-ipcRenderer.send('get-platform');
-
 new Vue({
   router,
   store,

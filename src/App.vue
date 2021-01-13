@@ -48,7 +48,9 @@
       </v-btn>
     </v-app-bar>
     <v-main>
-      <router-view></router-view>
+      <keep-alive>
+        <router-view :key="$route.fullPath"></router-view>
+      </keep-alive>
     </v-main>
   </v-app>
 </template>
@@ -61,13 +63,14 @@ export default {
 
   data() {
     return {
+      platform: '',
       isMaximized: false
     };
   },
 
   computed: {
     isMac() {
-      return this.$platform === 'darwin';
+      return this.platform === 'darwin';
     }
   },
 
@@ -76,13 +79,31 @@ export default {
       handler(v) {
         this.handleChangeDark(v);
       }
+    },
+    '$route.path': {
+      handler(v) {
+        this.$db.set('last_route', v).write();
+        ipcRenderer.send('get-platform');
+      }
     }
+  },
+
+  created() {
+    ipcRenderer.send('get-platform');
+    ipcRenderer.on('get-platform-reply', (event, platform) => {
+      this.platform = platform;
+    });
   },
 
   mounted() {
     console.log(this.$db.getState());
     const isDark = this.$db.get('dark').value();
     this.$vuetify.theme.dark = !!isDark;
+
+    const last_route = this.$db.get('last_route').value();
+    if (!!last_route && this.$route.path !== last_route) {
+      this.$router.push(last_route);
+    }
   },
 
   methods: {
