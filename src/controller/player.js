@@ -1,37 +1,15 @@
 const ytdl = require('ytdl-core');
-// Buildin with nodejs
-import cp from 'child_process';
-import os from 'os';
-import PATH from 'path';
+
 import consola from 'consola';
-import fs from 'fs';
 import streamToBlob from 'stream-to-blob';
-
-// External modules
-import filenamify from 'filenamify';
-
-const appRootDir = require('app-root-dir').get();
-
-const ffplay = PATH.join(
-  appRootDir,
-  'node_modules',
-  'ffmpeg-static',
-  os.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg'
-);
 
 export default class Player {
   constructor({ url, list = [] }) {
     const timestamp = Date.now();
     this.id = timestamp;
-    this.filePath = PATH.join(appRootDir, 'tmp', `${timestamp}.mp3`);
     this.videoDetails = null;
     this.url = url;
     this.list = list;
-
-    // folder check
-    if (!fs.existsSync(PATH.join(appRootDir, 'tmp'))) {
-      fs.mkdirSync(this.filePath, { recursive: true });
-    }
 
     ytdl
       .getBasicInfo(url)
@@ -51,9 +29,6 @@ export default class Player {
       ytdl(url, {
         quality: 'highestaudio',
         filter: 'audioonly'
-      }).on('progress', (_, downloaded, total) => {
-        this.total = total;
-        this.downloaded = downloaded;
       })
     ).then(res => {
       this.audio = res;
@@ -62,11 +37,8 @@ export default class Player {
   }
 
   id = '';
-  filePath = '';
   url = '';
   list = [];
-  total = 0;
-  downloaded = 0;
   videoDetails = null;
   author = '';
   title = '';

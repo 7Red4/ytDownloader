@@ -153,8 +153,11 @@ export default {
       if (this.Player) {
         if (this.Player.url === this.ytUrl) return;
       }
-      this.Player = new Player({ url: this.ytUrl });
       this.loading = true;
+      this.lengthSeconds = 0;
+      this.t = 0;
+
+      this.Player = new Player({ url: this.ytUrl });
       this.Player.onBlobReady(() => {
         this.setInfo();
         this.playurl = URL.createObjectURL(this.Player.audio);
