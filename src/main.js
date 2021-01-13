@@ -1,3 +1,5 @@
+import { ipcRenderer } from 'electron';
+
 import Vue from 'vue';
 import App from './App.vue';
 import router from './router';
@@ -9,6 +11,12 @@ import './assets/style/main.scss';
 
 Vue.config.productionTip = false;
 Vue.use(DB);
+
+ipcRenderer.on('get-platform-reply', (event, platform) => {
+  Vue.prototype.$platform = platform;
+});
+
+ipcRenderer.send('get-platform');
 
 new Vue({
   router,

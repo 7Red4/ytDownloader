@@ -2,12 +2,14 @@
 
 import fs from 'fs';
 import https from 'https';
+import os from 'os';
 
 import { app, protocol, BrowserWindow, ipcMain, dialog } from 'electron';
 import { createProtocol } from 'vue-cli-plugin-electron-builder/lib';
 import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer';
 import { getInfo, start, record } from '@/controller/ytdl.js';
 import consola from 'consola';
+import { platform } from 'custom-electron-titlebar/lib/common/platform';
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
@@ -88,6 +90,11 @@ if (isDevelopment) {
 }
 
 // ipc events
+ipcMain.on('get-platform', event => {
+  const platform = os.platform();
+  event.reply('get-platform-reply', platform);
+});
+
 ipcMain.on('minimize-window', () => win.minimize && win.minimize());
 ipcMain.on('toggle-window', () =>
   win.isMaximized() ? win.unmaximize() : win.maximize()

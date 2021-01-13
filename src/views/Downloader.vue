@@ -243,8 +243,6 @@ import { ipcRenderer } from 'electron';
 import filenamify from 'filenamify';
 
 export default {
-  name: 'Home',
-
   data() {
     return {
       ytUrl: '',
