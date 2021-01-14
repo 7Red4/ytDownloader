@@ -9,20 +9,26 @@ const PlayerState = {
     },
 
     currentPlaying: null,
-    playList: [],
+    playLists: {
+      /*
+        [ title: String ]: Array<Song>
+      */
+    },
     playingList: []
   }),
   getters: {
     getSourceById: state => id => state.playSources[id],
     getSongById: state => id => state.songs[id],
     getSongsBySourceId: state => ytId => state.playSourcesSongMap[ytId],
+    getCurrentPlayingIdx: state =>
+      state.playingList.findIndex(({ id }) => id === state.currentPlaying.id),
 
     getPlaySources: state => state.playSources,
     getSongs: state => state.songs,
     getPlaySourcesSongMap: state => state.playSourcesSongMap,
     getCurrentPlaying: state => state.currentPlaying,
     getPlayingList: state => state.playingList,
-    getPlayList: state => state.playList
+    getPlayLists: state => state.playLists
   },
   mutations: {
     setPlaySource(state, source) {
@@ -38,8 +44,19 @@ const PlayerState = {
         this._vm.$set(state.playSourcesSongMap, song.ytId, [song]);
       }
     },
-    setCurrentPlaySong(state, source) {
-      state.currentPlaying = source;
+    setCurrentPlaySong(state, song) {
+      state.currentPlaying = song;
+    },
+    deleteSong(state, song) {
+      this._vm.$delete(state.songs, song.id);
+      let targetIndex = null;
+      state.playSourcesSongMap[song.ytId].find(({ id }, index) => {
+        if (id === song.id) {
+          targetIndex = index;
+          return true;
+        }
+      });
+      state.playSourcesSongMap[song.ytId].splice(targetIndex, 1);
     }
   },
   actions: {
@@ -49,8 +66,12 @@ const PlayerState = {
     SET_SONG({ commit }, song) {
       commit('setSong', song);
     },
-    SET_CURRENT_PLAY_SONG({ commit }, source) {
-      commit('setCurrentPlaySong', source);
+    SET_CURRENT_PLAY_SONG({ commit }, song) {
+      commit('setCurrentPlaySong', song);
+    },
+
+    DELETE_SONG({ commit }, song) {
+      commit('deleteSong', song);
     }
   }
 };

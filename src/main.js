@@ -29,10 +29,16 @@ function hms2s(str) {
   return s;
 }
 
+function s2hms(str) {
+  if (!str) return '00:00:00';
+  return new Date(str * 1000).toISOString().substr(11, 8);
+}
+
 Vue.config.productionTip = false;
 Vue.use(DB);
 Vue.prototype.$pyt = parseYtId;
 Vue.prototype.$hms2s = hms2s;
+Vue.prototype.$s2hms = s2hms;
 
 new Vue({
   router,

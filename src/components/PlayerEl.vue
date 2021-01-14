@@ -1,6 +1,6 @@
 <template>
   <v-card tile class="player_sheet">
-    <audio ref="PlayerEl" hidden :src="src"></audio>
+    <audio ref="PlayerEl" hidden :src="Song.src" @load="mediaReady"></audio>
     <v-slider
       v-model="t"
       class="progress_bar"
@@ -84,17 +84,13 @@ export default {
       volumeBeforeMute: this.$db.get('volume').value(),
       volume: this.$db.get('volume').value(),
       t: 0,
-      isPause: true,
+      isPause: false,
       isSliderHolding: false
     };
   },
 
   computed: {
-    ...mapGetters(['getSourceById']),
-    src() {
-      const source = this.getSourceById(this.Song.id);
-      return source ? source.src : '';
-    },
+    ...mapGetters(['getPlayingList']),
     length2time() {
       return new Date((this.Song ? this.Song.length : 0) * 1000)
         .toISOString()
@@ -135,6 +131,16 @@ export default {
   },
 
   watch: {
+    'Song.id': {
+      handler() {
+        this.setTime(0);
+        this.setInfo();
+        this.$nextTick(() => {
+          this.$refs.PlayerEl.play();
+          this.isPause = false;
+        });
+      }
+    },
     volume(v) {
       this.$refs.PlayerEl.volume = v / 100;
     }
@@ -146,13 +152,19 @@ export default {
 
   mounted() {
     this.$refs.PlayerEl.addEventListener('timeupdate', this.timeupdate);
+    this.$refs.PlayerEl.addEventListener('loadeddata', this.mediaReady);
   },
 
   beforeDestroy() {
     this.$refs.PlayerEl.removeEventListener('timeupdate', this.timeupdate);
+    this.$refs.PlayerEl.removeEventListener('loadeddata', this.mediaReady);
   },
 
   methods: {
+    mediaReady() {
+      this.$refs.PlayerEl.currentTime = this.Song.start;
+      this.$refs.PlayerEl.play();
+    },
     playPause() {
       if (this.$refs.PlayerEl.paused) {
         this.$refs.PlayerEl.play();
@@ -166,16 +178,28 @@ export default {
       this.length = this.Song.length;
     },
     setTime(v) {
-      this.$refs.PlayerEl && (this.$refs.PlayerEl.currentTime = v);
+      this.$refs.PlayerEl &&
+        (this.$refs.PlayerEl.currentTime = v + (this.Song.start || 0));
     },
     timeupdate(e) {
-      !this.isSliderHolding && (this.t = Math.floor(e.target.currentTime));
+      if (this.t > this.Song.length) {
+        this.nextSong();
+        return;
+      }
+      !this.isSliderHolding &&
+        (this.t = Math.floor(e.target.currentTime) - this.Song.start);
     },
     sliderMousedown() {
       this.isSliderHolding = true;
     },
     sliderMouseup() {
       this.isSliderHolding = false;
+    },
+    prevSong() {
+      //
+    },
+    nextSong() {
+      //
     },
 
     toggleMute() {

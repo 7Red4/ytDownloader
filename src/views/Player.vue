@@ -24,6 +24,11 @@
       </v-window>
     </v-container>
 
+    <div v-if="getCurrentPlaying" class="py-14 my-14">
+      <div class="py-7"></div>
+      <!-- I'm a space holder when the player exist -->
+    </div>
+
     <template v-if="getCurrentPlaying">
       <v-slide-y-reverse-transition>
         <PlayerEl :Song="getCurrentPlaying" />

@@ -24,7 +24,7 @@
       </v-col>
     </v-row>
 
-    <v-menu min-width="200" :nudge-top="16" offset-y left>
+    <v-menu v-if="thumbnail" min-width="200" :nudge-top="16" offset-y left>
       <template #activator="{ on }">
         <v-btn v-on="on" class="video_info_card-more" icon>
           <v-icon>mdi-dots-vertical</v-icon>
@@ -58,19 +58,38 @@
         </v-list>
       </v-card>
     </v-dialog>
+
+    <v-snackbar v-model="snack" dark @input="v => !v && (snackMsg = '')">
+      <div class="d-flex align-center">
+        {{ snackMsg }}
+        <v-spacer></v-spacer>
+        <v-btn text icon color="error" @click.native="snack = false">
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
+      </div>
+    </v-snackbar>
   </v-card>
 </template>
 
 <script>
+import { ipcRenderer } from 'electron';
+
 export default {
   props: {
     videoDetails: {
       required: true
+    },
+    thumbnail: {
+      type: Boolean,
+      default: false
     }
   },
 
   data() {
     return {
+      snackMsg: '',
+      snack: false,
+      tumbnailPath: '',
       isThumbnailDownloadDialogOpen: false
     };
   },
@@ -82,6 +101,44 @@ export default {
       return new Date(this.videoDetails.lengthSeconds * 1000)
         .toISOString()
         .substr(11, 8);
+    }
+  },
+  mounted() {
+    if (this.thumbnail) this.registerThumbnailDownload();
+  },
+
+  methods: {
+    registerThumbnailDownload() {
+      ipcRenderer.on('pick-thumbnail-path-reply', (event, path) => {
+        this.tumbnailPath = path || '';
+        this.downloadTumbnail();
+      });
+
+      ipcRenderer.on('download-thumbnail-complete', (event, res) => {
+        this.isThumbnailDownloadDialogOpen = false;
+        this.snackMsg = '下載完成';
+        this.snack = true;
+      });
+
+      ipcRenderer.on('download-thumbnail-fail', (event, res) => {
+        this.snackMsg = '下載失敗';
+        this.snack = true;
+      });
+    },
+    pickThumbnailPath(url) {
+      this.thumbnailURL = url;
+      ipcRenderer.send('pick-thumbnail-path', this.title);
+    },
+    downloadTumbnail() {
+      if (!this.tumbnailPath) {
+        this.snackMsg = '請選擇路徑';
+        this.snack = true;
+        return;
+      }
+      ipcRenderer.send('download-thumbnail', {
+        url: this.thumbnailURL,
+        path: this.tumbnailPath
+      });
     }
   }
 };

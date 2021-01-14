@@ -23,7 +23,7 @@
           <v-icon size="16" color="red">mdi-circle</v-icon>
           直播中
         </p>
-        <VideoInfoCard :videoDetails="videoInfo.videoDetails" />
+        <VideoInfoCard :videoDetails="videoInfo.videoDetails" thumbnail />
 
         <v-form ref="form">
           <v-text-field
@@ -156,7 +156,7 @@
             color="primary"
           ></v-progress-circular>
           <br />
-          時間經過 : {{ HHMMSS }}
+          時間經過 : {{ $s2hms(seconds) }}
         </v-card-text>
         <v-card-actions v-if="isLive">
           <v-btn color="error" @click="stop" text>中止錄影</v-btn>
@@ -238,9 +238,6 @@ export default {
 
     isLive() {
       return this.videoInfo && this.videoInfo.videoDetails.isLive;
-    },
-    HHMMSS() {
-      return new Date(this.seconds * 1000).toISOString().substr(11, 8);
     }
   },
 
@@ -274,30 +271,16 @@ export default {
       (event, path) => (this.path = !path.canceled ? path.filePaths[0] : '')
     );
 
-    ipcRenderer.on('pick-thumbnail-path-reply', (event, path) => {
-      this.tumbnailPath = path || '';
-      this.downloadTumbnail();
-    });
-
-    ipcRenderer.on('download-thumbnail-complete', (event, res) => {
-      this.isThumbnailDownloadDialogOpen = false;
-      this.snackMsg = '下載完成';
-      this.snack = true;
-    });
-
-    ipcRenderer.on('download-thumbnail-fail', (event, res) => {
-      this.snackMsg = '下載失敗';
-      this.snack = true;
-    });
-
     ipcRenderer.on('download-processing', (event, tracker) => {
       this.tracker.audio = tracker.audio;
       this.tracker.video = tracker.video;
       this.tracker.merged = tracker.merged;
     });
+
     ipcRenderer.on('download-complete', () => {
       this.isProcessing = false;
     });
+
     ipcRenderer.on('download-fail', (event, error) => {
       this.snackMsg = error;
       this.snack = true;
@@ -329,21 +312,7 @@ export default {
       this.loading = true;
       ipcRenderer.send('get-yt-info', url);
     },
-    pickThumbnailPath(url) {
-      this.thumbnailURL = url;
-      ipcRenderer.send('pick-thumbnail-path', this.title);
-    },
-    downloadTumbnail() {
-      if (!this.tumbnailPath) {
-        this.snackMsg = '請選擇路徑';
-        this.snack = true;
-        return;
-      }
-      ipcRenderer.send('download-thumbnail', {
-        url: this.thumbnailURL,
-        path: this.tumbnailPath
-      });
-    },
+
     pickFilePath() {
       ipcRenderer.send('pick-path');
     },
