@@ -48,9 +48,11 @@
       </v-btn>
     </v-app-bar>
     <v-main>
-      <keep-alive>
-        <router-view :key="$route.fullPath"></router-view>
-      </keep-alive>
+      <transition name="route-change-transition">
+        <keep-alive>
+          <router-view :key="$route.fullPath"></router-view>
+        </keep-alive>
+      </transition>
     </v-main>
   </v-app>
 </template>
@@ -123,3 +125,24 @@ export default {
   }
 };
 </script>
+
+<style lang="scss" scoped>
+.route-change-transition-enter,
+.route-change-transition-leave-to {
+  opacity: 0;
+  transform: translateY(40px);
+}
+
+.route-change-transition-enter-to,
+.route-change-transition-leave {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.route-change-transition-enter-active,
+.route-change-transition-leave-active {
+  position: absolute;
+  width: 100%;
+  transition: 0.17s;
+}
+</style>

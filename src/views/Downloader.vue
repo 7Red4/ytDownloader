@@ -23,48 +23,7 @@
           <v-icon size="16" color="red">mdi-circle</v-icon>
           直播中
         </p>
-        <v-card class="video_info_card mb-10">
-          <v-row align="center" class="px-3">
-            <v-col cols="4">
-              <v-img
-                :src="
-                  videoInfo.videoDetails.thumbnails.length
-                    ? videoInfo.videoDetails.thumbnails[
-                        videoInfo.videoDetails.thumbnails.length - 1
-                      ].url
-                    : ''
-                "
-              ></v-img>
-            </v-col>
-
-            <v-col cols="8">
-              <v-card-title>
-                {{ videoInfo.videoDetails.title.slice(0, 40) }}
-                {{ videoInfo.videoDetails.title.length > 40 ? '...' : '' }}
-              </v-card-title>
-              <v-card-text>
-                {{ videoInfo.videoDetails.description.slice(0, 120) }}
-                {{
-                  videoInfo.videoDetails.description.length > 120 ? '...' : ''
-                }}
-              </v-card-text>
-            </v-col>
-          </v-row>
-
-          <v-menu min-width="200" :nudge-top="16" offset-y left>
-            <template #activator="{ on }">
-              <v-btn v-on="on" class="video_info_card-more" icon>
-                <v-icon>mdi-dots-vertical</v-icon>
-              </v-btn>
-            </template>
-
-            <v-list>
-              <v-list-item @click="isThumbnailDownloadDialogOpen = true">
-                下載首圖
-              </v-list-item>
-            </v-list>
-          </v-menu>
-        </v-card>
+        <VideoInfoCard :videoDetails="videoInfo.videoDetails" />
 
         <v-form ref="form">
           <v-text-field
@@ -205,27 +164,6 @@
       </v-card>
     </v-dialog>
 
-    <v-dialog
-      v-model="isThumbnailDownloadDialogOpen"
-      max-width="500px"
-      transition="dialog-transition"
-    >
-      <v-card>
-        <v-card-title>
-          選擇解析度 (寬 x 高)
-        </v-card-title>
-        <v-list v-if="videoInfo && videoInfo.videoDetails.thumbnails.length">
-          <v-list-item
-            v-for="resolution in videoInfo.videoDetails.thumbnails"
-            :key="resolution.url"
-            @click="pickThumbnailPath(resolution.url)"
-          >
-            {{ resolution.width }} x {{ resolution.height }}
-          </v-list-item>
-        </v-list>
-      </v-card>
-    </v-dialog>
-
     <v-snackbar v-model="snack" dark @input="v => !v && (snackMsg = '')">
       <div class="d-flex align-center">
         {{ snackMsg }}
@@ -242,7 +180,13 @@
 import { ipcRenderer } from 'electron';
 import filenamify from 'filenamify';
 
+import VideoInfoCard from '@/components/VideoInfoCard';
+
 export default {
+  components: {
+    VideoInfoCard
+  },
+
   data() {
     return {
       ytUrl: '',
@@ -257,7 +201,6 @@ export default {
       vQuality: null,
       aQuality: null,
       isProcessing: false,
-      isThumbnailDownloadDialogOpen: false,
       timer: null,
       tracker: {
         start: new Date(),
@@ -432,14 +375,3 @@ export default {
   }
 };
 </script>
-
-<style lang="scss" scoped>
-.video_info_card {
-  position: relative;
-  .video_info_card-more {
-    position: absolute;
-    top: 4px;
-    right: 6px;
-  }
-}
-</style>
