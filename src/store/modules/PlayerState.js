@@ -1,27 +1,44 @@
-import Vue from 'vue';
-
 const PlayerState = {
   state: () => ({
+    playSources: {},
+    songs: {},
+    playSourcesSongMap: {
+      /*
+        [ ytId: String ]: Array<Song>
+      */
+    },
+
     currentPlaying: null,
     playList: [],
-    playingList: [],
-    playSources: {},
-    playSourcesTimeTagMap: {}
+    playingList: []
   }),
   getters: {
     getSourceById: state => id => state.playSources[id],
-    getSourceByYtUrl: state => ytUrl =>
-      Object.values(state.playSources).find(({ url }) => url === ytUrl),
+    getSongById: state => id => state.songs[id],
+    getSongsBySourceId: state => ytId => state.playSourcesSongMap[ytId],
+
     getPlaySources: state => state.playSources,
+    getSongs: state => state.songs,
+    getPlaySourcesSongMap: state => state.playSourcesSongMap,
+    getCurrentPlaying: state => state.currentPlaying,
     getPlayingList: state => state.playingList,
-    getCurrentPlaying: state => state.currentPlaying
+    getPlayList: state => state.playList
   },
   mutations: {
     setPlaySource(state, source) {
-      console.log(this);
       this._vm.$set(state.playSources, source.id, source);
     },
-    setCurrentPlaySource(state, source) {
+    setSong(state, song) {
+      // { ytId, src, start, end, length, tag, id } => Song;
+      this._vm.$set(state.songs, song.id, song);
+
+      if (state.playSourcesSongMap[song.ytId]) {
+        state.playSourcesSongMap[song.ytId].push(song);
+      } else {
+        this._vm.$set(state.playSourcesSongMap, song.ytId, [song]);
+      }
+    },
+    setCurrentPlaySong(state, source) {
       state.currentPlaying = source;
     }
   },
@@ -29,8 +46,11 @@ const PlayerState = {
     SET_PLAY_SOURCE({ commit }, source) {
       commit('setPlaySource', source);
     },
-    SET_CURRENT_PLAYSOURCE({ commit }, source) {
-      commit('setCurrentPlaySource', source);
+    SET_SONG({ commit }, song) {
+      commit('setSong', song);
+    },
+    SET_CURRENT_PLAY_SONG({ commit }, source) {
+      commit('setCurrentPlaySong', source);
     }
   }
 };

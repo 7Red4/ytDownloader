@@ -4,14 +4,14 @@
     <v-slider
       v-model="t"
       class="progress_bar"
-      :max="lengthSeconds"
+      :max="length"
       @change="setTime"
       @mousedown="sliderMousedown"
       @mouseup="sliderMouseup"
       hide-details
     ></v-slider>
     <div class="d-flex justify-center grey--text mt-3">
-      {{ `${t2time} / ${lengthSeconds2time}` }}
+      {{ `${t2time} / ${length2time}` }}
     </div>
     <v-list three-line>
       <v-list-item class="align-center">
@@ -73,16 +73,16 @@ import { mapGetters } from 'vuex';
 
 export default {
   props: {
-    PlaySource: {
+    Song: {
       required: true
     }
   },
 
   data() {
     return {
-      lengthSeconds: 0,
-      volumeBeforeMute: 100,
-      volume: 100,
+      length: 0,
+      volumeBeforeMute: this.$db.get('volume').value(),
+      volume: this.$db.get('volume').value(),
       t: 0,
       isPause: true,
       isSliderHolding: false
@@ -92,13 +92,11 @@ export default {
   computed: {
     ...mapGetters(['getSourceById']),
     src() {
-      const source = this.getSourceById(this.PlaySource.id);
+      const source = this.getSourceById(this.Song.id);
       return source ? source.src : '';
     },
-    lengthSeconds2time() {
-      return new Date(
-        (this.PlaySource ? this.PlaySource.lengthSeconds : 0) * 1000
-      )
+    length2time() {
+      return new Date((this.Song ? this.Song.length : 0) * 1000)
         .toISOString()
         .substr(11, 8);
     },
@@ -107,9 +105,9 @@ export default {
     },
     currentPlaying() {
       return {
-        tag: this.PlaySource.tag,
-        title: this.PlaySource.title,
-        author: this.PlaySource.author
+        tag: this.Song.tag,
+        title: this.Song.title,
+        author: this.Song.author
       };
     },
     isMute() {
@@ -165,7 +163,7 @@ export default {
       }
     },
     setInfo() {
-      this.lengthSeconds = this.PlaySource.lengthSeconds;
+      this.length = this.Song.length;
     },
     setTime(v) {
       this.$refs.PlayerEl && (this.$refs.PlayerEl.currentTime = v);

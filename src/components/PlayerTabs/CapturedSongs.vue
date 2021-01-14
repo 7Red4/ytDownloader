@@ -7,7 +7,7 @@
     <v-card
       v-for="(playSource, id) of getPlaySources"
       :key="id"
-      @click="SET_CURRENT_PLAYSOURCE(playSource)"
+      @click="$emit('edit-source', id)"
     >
       <VideoInfoCard :videoDetails="playSource.videoDetails" />
     </v-card>
@@ -15,7 +15,7 @@
 </template>
 
 <script>
-import { mapGetters, mapActions } from 'vuex';
+import { mapGetters } from 'vuex';
 
 import VideoInfoCard from '@/components/VideoInfoCard';
 
@@ -26,9 +26,6 @@ export default {
     hasSources() {
       return Object.values(this.getPlaySources).length;
     }
-  },
-  methods: {
-    ...mapActions(['SET_CURRENT_PLAYSOURCE'])
   }
 };
 </script>

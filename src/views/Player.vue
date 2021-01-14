@@ -2,18 +2,18 @@
   <v-card class="py-4 fill-height">
     <v-container>
       <v-tabs v-model="currentTab" centered>
-        <v-tab>歌曲獲取與歌單製作</v-tab>
-        <v-tab>已獲取歌曲</v-tab>
+        <v-tab>曲源獲取與歌單製作</v-tab>
+        <v-tab>已獲取曲源</v-tab>
         <v-tab>我的歌單</v-tab>
         <v-tab>正在播放清單</v-tab>
       </v-tabs>
 
       <v-window v-model="currentTab" class="pt-4">
         <v-window-item :value="0">
-          <CaptureSongsAndCreateList />
+          <CaptureSongsAndCreateList :editing-source-id="editingSourceId" />
         </v-window-item>
         <v-window-item :value="1">
-          <CapturedSongs />
+          <CapturedSongs @edit-source="editSource" />
         </v-window-item>
         <v-window-item :value="2">
           <PlayList />
@@ -26,7 +26,7 @@
 
     <template v-if="getCurrentPlaying">
       <v-slide-y-reverse-transition>
-        <PlayerEl :PlaySource="getCurrentPlaying" />
+        <PlayerEl :Song="getCurrentPlaying" />
       </v-slide-y-reverse-transition>
     </template>
 
@@ -65,9 +65,9 @@ export default {
   },
   data() {
     return {
-      currentTab: 0,
+      editingSourceId: '',
 
-      PlaySource: {},
+      currentTab: 0,
       snack: false,
       snackMsg: ''
     };
@@ -75,6 +75,21 @@ export default {
 
   computed: {
     ...mapGetters(['getCurrentPlaying'])
+  },
+
+  watch: {
+    currentTab(v) {
+      if (v !== 0) {
+        this.editingSourceId = '';
+      }
+    }
+  },
+
+  methods: {
+    editSource(id) {
+      this.editingSourceId = id;
+      this.currentTab = 0;
+    }
   }
 };
 </script>

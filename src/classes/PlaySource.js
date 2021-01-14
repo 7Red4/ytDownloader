@@ -6,8 +6,6 @@ import streamToBlob from 'stream-to-blob';
 export default class PlaySource {
   constructor({ url = '', list = [] }) {
     if (url) {
-      const timestamp = Date.now();
-      this.id = timestamp;
       this.videoDetails = null;
       this.url = url;
       this.list = list;
@@ -17,7 +15,8 @@ export default class PlaySource {
         .then(({ videoDetails }) => {
           this.videoDetails = videoDetails;
 
-          const { lengthSeconds, author, title } = videoDetails;
+          const { lengthSeconds, videoId, author, title } = videoDetails;
+          this.id = videoId;
           this.lengthSeconds = Number(lengthSeconds);
           this.author = author.name;
           this.title = title;
@@ -41,7 +40,6 @@ export default class PlaySource {
   id = '';
   url = '';
   src = '';
-  tag = '';
   list = [];
   videoDetails = null;
   author = '';
@@ -60,8 +58,5 @@ export default class PlaySource {
   }
   setSrc(src) {
     this.src = src;
-  }
-  setTag(tag) {
-    this.tag = tag;
   }
 }

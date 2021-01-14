@@ -20,6 +20,7 @@
           {{ videoDetails.description.slice(0, 120) }}
           {{ videoDetails.description.length > 120 ? '...' : '' }}
         </v-card-text>
+        <v-card-text>時間長度 : {{ length }}</v-card-text>
       </v-col>
     </v-row>
 
@@ -72,6 +73,16 @@ export default {
     return {
       isThumbnailDownloadDialogOpen: false
     };
+  },
+
+  computed: {
+    length() {
+      if (!this.videoDetails) return '00:00:00';
+      if (this.videoDetails.isLive) return '直播中';
+      return new Date(this.videoDetails.lengthSeconds * 1000)
+        .toISOString()
+        .substr(11, 8);
+    }
   }
 };
 </script>
