@@ -20,7 +20,11 @@
           {{ videoDetails.description.slice(0, 120) }}
           {{ videoDetails.description.length > 120 ? '...' : '' }}
         </v-card-text>
-        <v-card-text>時間長度 : {{ length }}</v-card-text>
+        <v-card-text class="d-flex">
+          時間長度 : {{ length }}
+          <v-spacer></v-spacer>
+          <v-btn text small @click="openLink" color="primary">連結</v-btn>
+        </v-card-text>
       </v-col>
     </v-row>
 
@@ -139,6 +143,9 @@ export default {
         url: this.thumbnailURL,
         path: this.tumbnailPath
       });
+    },
+    openLink() {
+      require('electron').shell.openExternal(this.videoDetails.video_url);
     }
   }
 };

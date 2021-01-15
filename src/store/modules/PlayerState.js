@@ -18,7 +18,7 @@ const PlayerState = {
         }
       */
     },
-    playingList: []
+    playingListIds: []
   }),
   getters: {
     getSourceById: state => id => state.playSources[id],
@@ -26,7 +26,7 @@ const PlayerState = {
     getPlayListById: state => id => state.playLists[id],
     getSongsBySourceId: state => ytId => state.playSourcesSongMap[ytId],
     getCurrentPlayingIdx: state =>
-      state.playingList.findIndex(id => id === state.currentPlaying.id),
+      state.playingListIds.findIndex(id => id === state.currentPlaying.id),
 
     getPlaySources: state =>
       Object.keys(state.playSources).length ? state.playSources : null,
@@ -36,7 +36,7 @@ const PlayerState = {
         ? state.playSourcesSongMap
         : null,
     getCurrentPlaying: state => state.currentPlaying,
-    getPlayingList: state => state.playingList,
+    getPlayingListIds: state => state.playingListIds,
     getPlayLists: state =>
       Object.keys(state.playLists).length ? state.playLists : null
   },
@@ -57,11 +57,17 @@ const PlayerState = {
     setPlayList(state, playList) {
       this._vm.$set(state.playLists, playList.id, playList);
     },
-    setPlayingList(state, songs) {
-      this._vm.$set(state, 'playingList', songs);
+    setPlayingListIds(state, songIds) {
+      this._vm.$set(state, 'playingListIds', songIds);
     },
     setCurrentPlaySong(state, song) {
       state.currentPlaying = song;
+    },
+
+    addSongToList(state, { listId, songId }) {
+      if (state.playLists[listId].songs.indexOf(songId) < 0) {
+        state.playLists[listId].songs.push(songId);
+      }
     },
 
     deleteSong(state, song) {
@@ -76,7 +82,7 @@ const PlayerState = {
       state.playSourcesSongMap[song.ytId].splice(targetIndex, 1);
     },
     deletPlayList(state, playList) {
-      this._vm.$delete(state.playList, playList.id);
+      this._vm.$delete(state.playLists, playList.id);
     }
   },
   actions: {
@@ -89,11 +95,15 @@ const PlayerState = {
     SET_PLAY_LIST({ commit }, playList) {
       commit('setPlayList', playList);
     },
-    SET_PLAYING_LIST({ commit }, songs) {
-      commit('setPlayingList', songs);
+    SET_PLAYING_LIST_IDS({ commit }, songIds) {
+      commit('setPlayingListIds', songIds);
     },
     SET_CURRENT_PLAY_SONG({ commit }, song) {
       commit('setCurrentPlaySong', song);
+    },
+
+    ADD_SONG_TO_LIST({ commit }, { listId, songId }) {
+      commit('addSongToList', { listId, songId });
     },
 
     DELETE_SONG({ commit }, song) {

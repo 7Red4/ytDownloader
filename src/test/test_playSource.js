@@ -20,11 +20,6 @@ export default {
       tag: 'Get Over Dress-Code by プリパラ',
       start: '12:52',
       end: '17:04'
-    },
-    {
-      tag: '盜作',
-      start: '8:05',
-      end: '12:03'
     }
   ]
 };

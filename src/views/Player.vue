@@ -31,7 +31,10 @@
 
     <template v-if="getCurrentPlaying">
       <v-slide-y-reverse-transition>
-        <PlayerEl :Song="getCurrentPlaying" />
+        <PlayerEl
+          :Song="getCurrentPlaying"
+          @show-now-playing="currentTab = 3"
+        />
       </v-slide-y-reverse-transition>
     </template>
 

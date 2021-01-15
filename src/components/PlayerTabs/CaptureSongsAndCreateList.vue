@@ -20,8 +20,10 @@
       </v-text-field>
 
       <VideoInfoCard
-        v-if="PlaySource.videoDetails && ytId === PlaySource.id"
-        :videoDetails="PlaySource.videoDetails"
+        v-if="(PlaySource.videoDetails || hasSource) && ytId === PlaySource.id"
+        :videoDetails="
+          hasSource ? getSourceById(ytId).videoDetails : PlaySource.videoDetails
+        "
       />
 
       <v-form v-if="PlaySource.src && ytId === PlaySource.id" ref="tagCheck">
@@ -75,9 +77,7 @@
                   depressed
                   color="primary"
                 >
-                  <v-icon>
-                    mdi-plus
-                  </v-icon>
+                  <v-icon>mdi-plus</v-icon>
                 </v-btn>
               </template>
               <span>新增歌曲</span>
@@ -87,25 +87,12 @@
       </v-form>
 
       <div class="d-flex mb-3">
-        <h2>
-          此曲源已新增的歌曲
-        </h2>
-        <v-spacer></v-spacer>
-        <v-btn
-          v-if="addedSongs"
-          fab
-          small
-          depressed
-          color="error"
-          @click="isEdit = !isEdit"
-        >
-          <v-icon>{{ isEdit ? 'mdi-pencil-off' : 'mdi-pencil' }}</v-icon>
-        </v-btn>
+        <h2>此曲源已新增的歌曲</h2>
       </div>
       <v-card max-height="400" class="overflow-auto">
         <v-card-text>
           <p v-if="!addedSongs">尚無歌曲</p>
-          <v-list three-line>
+          <v-list>
             <template v-for="song in addedSongs">
               <v-list-item :key="`${ytId}-${song.id}`">
                 <v-list-item-content>
@@ -128,16 +115,33 @@
                 <v-icon class="ml-5" @click="SET_CURRENT_PLAY_SONG(song)">
                   mdi-play-circle
                 </v-icon>
-                <v-fab-transition>
-                  <v-icon
-                    v-if="isEdit"
-                    class="ml-5"
-                    color="error"
-                    @click="DELETE_SONG(song)"
-                  >
-                    mdi-delete
-                  </v-icon>
-                </v-fab-transition>
+                <v-menu left>
+                  <template #activator="{ on }">
+                    <v-icon v-on="on">mdi-dots-vertical-circle</v-icon>
+                  </template>
+                  <v-list dense>
+                    <v-list-item @click="DELETE_SONG(song)">
+                      <v-list-item-icon>
+                        <v-icon color="error">
+                          mdi-delete
+                        </v-icon>
+                      </v-list-item-icon>
+                      <v-list-item-content>
+                        刪除
+                      </v-list-item-content>
+                    </v-list-item>
+                    <v-list-item @click="openAddToListFrame(song)">
+                      <v-list-item-icon>
+                        <v-icon color="error">
+                          mdi-plus
+                        </v-icon>
+                      </v-list-item-icon>
+                      <v-list-item-content>
+                        新增至清單
+                      </v-list-item-content>
+                    </v-list-item>
+                  </v-list>
+                </v-menu>
               </v-list-item>
               <v-divider :key="`${ytId}-${song.id}-divider`"></v-divider>
             </template>
@@ -145,6 +149,41 @@
         </v-card-text>
       </v-card>
     </v-card-text>
+
+    <v-dialog v-model="isAddToListDialogShow" scrollable>
+      <v-card>
+        <v-card-title>
+          要加入的播放清單
+        </v-card-title>
+        <v-card-text>
+          <v-list dense>
+            <v-list-item>
+              <v-text-field
+                v-model="newListName"
+                prepend-icon="mdi-plus"
+                placeholder="新增清單"
+              >
+                <template #append v-if="!!newListName">
+                  <v-btn text @click="addToList()">新增</v-btn>
+                </template>
+              </v-text-field>
+            </v-list-item>
+            <v-divider></v-divider>
+            <template v-for="list in getPlayLists">
+              <v-list-item
+                :key="`add-list:${list.id}`"
+                @click="addToList(list)"
+              >
+                {{ list.title }}
+                <v-spacer></v-spacer>
+                {{ list.songs.length }} 首歌
+              </v-list-item>
+              <v-divider :key="`add-list:${list.id}-divider`"></v-divider>
+            </template>
+          </v-list>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
   </v-card>
 </template>
 
@@ -175,16 +214,19 @@ export default {
       loading: false,
 
       PlaySource,
-      isEdit: false,
 
       start: 0,
       end: '',
-      tag: ''
+      tag: '',
+
+      isAddToListDialogShow: false,
+      newListName: '',
+      addingSong: Song
     };
   },
 
   computed: {
-    ...mapGetters(['getSourceById', 'getSongsBySourceId']),
+    ...mapGetters(['getSourceById', 'getSongsBySourceId', 'getPlayLists']),
     hasSource() {
       return !!this.getSourceById(this.ytId);
     },
@@ -217,15 +259,17 @@ export default {
       'SET_PLAY_SOURCE',
       'SET_SONG',
       'DELETE_SONG',
-      'SET_CURRENT_PLAY_SONG'
+      'SET_CURRENT_PLAY_SONG',
+      'SET_PLAY_LIST',
+      'ADD_SONG_TO_LIST'
     ]),
     /* async */ byImport() {
-      //
+      // TODO:
     },
     async setTestData() {
       const wait = this.$nextTick;
       await wait();
-
+      if (this.ytUrl !== testData.ytUrl) return;
       for (const song of testData.songs) {
         Object.keys(song).forEach(k => (this[k] = song[k]));
         await wait();
@@ -272,7 +316,7 @@ export default {
         this.PlaySource = new PlaySource({ url: this.ytUrl });
         this.PlaySource.onBlobReady(() => {
           this.PlaySource.setSrc(URL.createObjectURL(this.PlaySource.audio));
-          this.end = Number(this.PlaySource.lengthSeconds);
+          this.end = this.$s2hms(this.PlaySource.lengthSeconds);
           this.SET_PLAY_SOURCE(this.PlaySource);
 
           this.loading = false;
@@ -281,6 +325,7 @@ export default {
       }
     },
     setSong() {
+      // TODO: start end validate
       if (!this.$refs.tagCheck.validate()) return;
       const start = this.$hms2s(this.start);
       const end = this.$hms2s(this.end);
@@ -299,6 +344,23 @@ export default {
       this.SET_SONG(song);
 
       this.$refs.tagCheck.reset();
+    },
+    openAddToListFrame(song) {
+      this.addingSong = song;
+      this.isAddToListDialogShow = true;
+    },
+    addToList(list) {
+      if (list) {
+        this.ADD_SONG_TO_LIST({ listId: list.id, songId: this.addingSong.id });
+      } else {
+        this.SET_PLAY_LIST({
+          id: Date.now(),
+          title: this.newListName,
+          songs: [this.addingSong.id]
+        });
+      }
+      this.isAddToListDialogShow = false;
+      this.newListName = '';
     }
   }
 };

@@ -13,8 +13,30 @@
     <div class="d-flex justify-center grey--text mt-3">
       {{ `${t2time} / ${length2time}` }}
     </div>
-    <v-list three-line>
-      <v-list-item class="align-center">
+    <div class="d-flex justify-center align-center">
+      <v-btn fab text x-small @click="changeShuffleState">
+        <v-icon>{{ shuffleIcon }}</v-icon>
+      </v-btn>
+
+      <v-btn fab text small @click="prevSong">
+        <v-icon>mdi-skip-previous</v-icon>
+      </v-btn>
+
+      <v-btn fab text small @click="playPause">
+        <v-icon>mdi-{{ isPause ? 'play' : 'pause' }}</v-icon>
+      </v-btn>
+
+      <v-btn fab text small @click="nextSong">
+        <v-icon>mdi-skip-next</v-icon>
+      </v-btn>
+
+      <v-btn fab text x-small @click="changeRepeatState">
+        <v-icon>{{ repeatIcon }}</v-icon>
+      </v-btn>
+    </div>
+    <v-list dense class="py-0">
+      <v-list-item class="align-center py-0">
+        <v-list-item-avatar></v-list-item-avatar>
         <v-list-item-content>
           <v-list-item-title class="text-truncate">
             {{ currentPlaying.tag }}
@@ -27,31 +49,10 @@
           </v-list-item-subtitle>
         </v-list-item-content>
 
-        <v-spacer></v-spacer>
-
-        <v-btn fab text x-small @click="changeShuffleState">
-          <v-icon>{{ shuffleIcon }}</v-icon>
-        </v-btn>
-
-        <v-btn fab text small @click="prevSong">
-          <v-icon>mdi-skip-previous</v-icon>
-        </v-btn>
-
-        <v-btn fab text small @click="playPause">
-          <v-icon>mdi-{{ isPause ? 'play' : 'pause' }}</v-icon>
-        </v-btn>
-
-        <v-btn fab text small @click="nextSong">
-          <v-icon>mdi-skip-next</v-icon>
-        </v-btn>
-
-        <v-btn fab text x-small @click="changeRepeatState">
-          <v-icon>{{ repeatIcon }}</v-icon>
-        </v-btn>
-
-        <v-spacer></v-spacer>
-
         <v-card flat width="140" class="d-flex align-center">
+          <v-btn icon @click="$emit('show-now-playing')">
+            <v-icon>mdi-playlist-play</v-icon>
+          </v-btn>
           <v-btn icon @click="toggleMute">
             <v-icon>{{ volumeIcon }}</v-icon>
           </v-btn>
@@ -94,7 +95,7 @@ export default {
   },
 
   computed: {
-    ...mapGetters(['getPlayingList', 'getCurrentPlayingIdx', 'getSongById']),
+    ...mapGetters(['getPlayingListIds', 'getCurrentPlayingIdx', 'getSongById']),
     length2time() {
       return new Date((this.Song ? this.Song.length : 0) * 1000)
         .toISOString()
@@ -211,14 +212,14 @@ export default {
       }
     },
     prevSong() {
-      const playingList = this.getPlayingList;
-      if (!playingList.length) {
+      const playingListIds = this.getPlayingListIds;
+      if (!playingListIds.length) {
         this.setTime(0);
         return;
       }
     },
     nextSong() {
-      const playingList = this.getPlayingList;
+      const playingListIds = this.getPlayingListIds;
       const state = this.repeatState % 3;
       console.log(state);
       if (state === 2) {
@@ -226,20 +227,20 @@ export default {
         this.setTime(0);
         return;
       }
-      if (!playingList.length) {
+      if (!playingListIds.length) {
         /* no list */
         this.pause();
         this.setTime(0);
         return;
       }
-      const length = playingList.length;
+      const length = playingListIds.length;
       const idx = this.getCurrentPlayingIdx;
       const isLast = idx + 1 === length;
 
       if (state === 1) {
         /* repeat all */
         this.SET_CURRENT_PLAY_SONG(
-          this.getSongById(playingList[isLast ? 0 : idx + 1])
+          this.getSongById(playingListIds[isLast ? 0 : idx + 1])
         );
         return;
       }
