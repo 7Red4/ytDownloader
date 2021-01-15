@@ -24,7 +24,7 @@ export default {
   computed: {
     ...mapGetters(['getPlaySources']),
     hasSources() {
-      return Object.values(this.getPlaySources).length;
+      return this.getPlaySources;
     }
   }
 };

@@ -29,11 +29,11 @@
 
         <v-spacer></v-spacer>
 
-        <v-btn fab text x-small>
+        <v-btn fab text x-small @click="changeShuffleState">
           <v-icon>{{ shuffleIcon }}</v-icon>
         </v-btn>
 
-        <v-btn fab text small>
+        <v-btn fab text small @click="prevSong">
           <v-icon>mdi-skip-previous</v-icon>
         </v-btn>
 
@@ -41,11 +41,11 @@
           <v-icon>mdi-{{ isPause ? 'play' : 'pause' }}</v-icon>
         </v-btn>
 
-        <v-btn fab text small>
+        <v-btn fab text small @click="nextSong">
           <v-icon>mdi-skip-next</v-icon>
         </v-btn>
 
-        <v-btn fab text x-small>
+        <v-btn fab text x-small @click="changeRepeatState">
           <v-icon>{{ repeatIcon }}</v-icon>
         </v-btn>
 
@@ -69,7 +69,7 @@
 </template>
 
 <script>
-import { mapGetters } from 'vuex';
+import { mapActions, mapGetters } from 'vuex';
 
 export default {
   props: {
@@ -81,16 +81,20 @@ export default {
   data() {
     return {
       length: 0,
-      volumeBeforeMute: this.$db.get('volume').value(),
-      volume: this.$db.get('volume').value(),
+      volumeBeforeMute: this.$db.get('volume').value() || 100,
+      volume: this.$db.get('volume').value() || 100,
       t: 0,
       isPause: false,
-      isSliderHolding: false
+      isSliderHolding: false,
+      shuffleStates: ['mdi-shuffle-disabled', 'mdi-shuffle'],
+      shuffleState: this.$db.get('shuffle').value() || 0,
+      repeatStates: ['mdi-repeat-off', 'mdi-repeat', 'mdi-repeat-once'],
+      repeatState: this.$db.get('repeat').value() || 0
     };
   },
 
   computed: {
-    ...mapGetters(['getPlayingList']),
+    ...mapGetters(['getPlayingList', 'getCurrentPlayingIdx', 'getSongById']),
     length2time() {
       return new Date((this.Song ? this.Song.length : 0) * 1000)
         .toISOString()
@@ -123,10 +127,10 @@ export default {
     },
 
     shuffleIcon() {
-      return 'mdi-shuffle-disabled';
+      return this.shuffleStates[this.shuffleState % 2];
     },
     repeatIcon() {
-      return 'mdi-repeat-off';
+      return this.repeatStates[this.repeatState % 3];
     }
   },
 
@@ -161,28 +165,22 @@ export default {
   },
 
   methods: {
+    ...mapActions(['SET_CURRENT_PLAY_SONG']),
+    // setting
     mediaReady() {
       this.$refs.PlayerEl.currentTime = this.Song.start;
       this.$refs.PlayerEl.play();
-    },
-    playPause() {
-      if (this.$refs.PlayerEl.paused) {
-        this.$refs.PlayerEl.play();
-        this.isPause = false;
-      } else {
-        this.$refs.PlayerEl.pause();
-        this.isPause = true;
-      }
     },
     setInfo() {
       this.length = this.Song.length;
     },
     setTime(v) {
+      this.t = v;
       this.$refs.PlayerEl &&
         (this.$refs.PlayerEl.currentTime = v + (this.Song.start || 0));
     },
     timeupdate(e) {
-      if (this.t > this.Song.length) {
+      if (this.t >= this.Song.length) {
         this.nextSong();
         return;
       }
@@ -195,22 +193,84 @@ export default {
     sliderMouseup() {
       this.isSliderHolding = false;
     },
+
+    // controll
+    play() {
+      this.$refs.PlayerEl.play();
+      this.isPause = false;
+    },
+    pause() {
+      this.$refs.PlayerEl.pause();
+      this.isPause = true;
+    },
+    playPause() {
+      if (this.$refs.PlayerEl.paused) {
+        this.play();
+      } else {
+        this.pause();
+      }
+    },
     prevSong() {
-      //
+      const playingList = this.getPlayingList;
+      if (!playingList.length) {
+        this.setTime(0);
+        return;
+      }
     },
     nextSong() {
-      //
-    },
+      const playingList = this.getPlayingList;
+      const state = this.repeatState % 3;
+      console.log(state);
+      if (state === 2) {
+        /* repeat one */
+        this.setTime(0);
+        return;
+      }
+      if (!playingList.length) {
+        /* no list */
+        this.pause();
+        this.setTime(0);
+        return;
+      }
+      const length = playingList.length;
+      const idx = this.getCurrentPlayingIdx;
+      const isLast = idx + 1 === length;
 
+      if (state === 1) {
+        /* repeat all */
+        this.SET_CURRENT_PLAY_SONG(
+          this.getSongById(playingList[isLast ? 0 : idx + 1])
+        );
+        return;
+      }
+
+      if (state === 0) {
+        /* repeat off && is last song of playlist */
+        this.pause();
+        this.setTime(0);
+        return;
+      }
+    },
     toggleMute() {
       if (this.volume) {
         this.volumeBeforeMute = this.volume;
         this.volume = 0;
       } else {
+        if (!this.volumeBeforeMute) this.volumeBeforeMute = 100;
         this.volume = this.volumeBeforeMute;
       }
       this.setVolumeToDb();
     },
+    changeShuffleState() {
+      this.shuffleState++;
+      this.$db.set('shuffle', this.shuffleState % 2).write();
+      // if shuffle reset playing list
+    },
+    changeRepeatState() {
+      this.repeatState++;
+      this.$db.set('repeat', this.repeatState % 3).write();
+    },
+
     setVolumeToDb() {
       this.$db.set('volume', this.volume).write();
     }

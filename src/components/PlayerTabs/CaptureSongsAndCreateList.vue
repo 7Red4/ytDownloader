@@ -86,8 +86,8 @@
         </v-row>
       </v-form>
 
-      <div class="d-flex">
-        <h2 class="mb-3">
+      <div class="d-flex mb-3">
+        <h2>
           此曲源已新增的歌曲
         </h2>
         <v-spacer></v-spacer>
@@ -95,6 +95,7 @@
           v-if="addedSongs"
           fab
           small
+          depressed
           color="error"
           @click="isEdit = !isEdit"
         >
@@ -155,6 +156,9 @@ import Song from '@/classes/Song';
 
 import VideoInfoCard from '@/components/VideoInfoCard';
 
+const isDev = process.env.NODE_ENV !== 'production';
+import testData from '@/test/test_playSource';
+
 export default {
   components: { VideoInfoCard },
 
@@ -201,6 +205,13 @@ export default {
     }
   },
 
+  async mounted() {
+    if (isDev) {
+      this.ytUrl = testData.ytUrl;
+      this.capture();
+    }
+  },
+
   methods: {
     ...mapActions([
       'SET_PLAY_SOURCE',
@@ -208,6 +219,20 @@ export default {
       'DELETE_SONG',
       'SET_CURRENT_PLAY_SONG'
     ]),
+    /* async */ byImport() {
+      //
+    },
+    async setTestData() {
+      const wait = this.$nextTick;
+      await wait();
+
+      for (const song of testData.songs) {
+        Object.keys(song).forEach(k => (this[k] = song[k]));
+        await wait();
+        this.setSong();
+        await wait();
+      }
+    },
     handleFocus(e) {
       navigator.clipboard.readText().then(text => {
         if (this.ytUrl === text) return;
@@ -251,6 +276,7 @@ export default {
           this.SET_PLAY_SOURCE(this.PlaySource);
 
           this.loading = false;
+          if (isDev) this.setTestData();
         });
       }
     },
