@@ -86,6 +86,8 @@
 <script>
 import { mapGetters, mapActions } from 'vuex';
 
+// TODO: filter the songs by all, added, not added
+
 export default {
   data() {
     return {
