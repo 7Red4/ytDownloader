@@ -12,8 +12,8 @@
         <v-divider></v-divider>
         <v-card-text>
           <v-list>
-            <v-list-item>
-              <v-list-item-content @click="showShongDetail(getCurrentPlaying)">
+            <v-list-item @click="showShongDetail(getCurrentPlaying)">
+              <v-list-item-content>
                 <v-list-item-title class="text-truncate">
                   {{ getCurrentPlaying.tag }}
                 </v-list-item-title>
@@ -59,6 +59,9 @@
                   </v-list-item-subtitle>
                 </v-list-item-content>
                 {{ $s2hms(song.length) }}
+                <v-icon class="ml-5" @click.stop="SET_CURRENT_PLAY_SONG(song)">
+                  mdi-play-circle
+                </v-icon>
               </v-list-item>
               <v-divider :key="`playing:${song.id}-divider`"></v-divider>
             </template>
@@ -106,7 +109,7 @@
 </template>
 
 <script>
-import { mapGetters } from 'vuex';
+import { mapActions, mapGetters } from 'vuex';
 
 import Song from '@/classes/Song';
 
@@ -136,6 +139,7 @@ export default {
   },
 
   methods: {
+    ...mapActions(['SET_CURRENT_PLAY_SONG']),
     showShongDetail(song) {
       this.showingSong = song;
       this.isShowSongDetail = true;

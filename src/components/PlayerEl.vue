@@ -158,11 +158,13 @@ export default {
   mounted() {
     this.$refs.PlayerEl.addEventListener('timeupdate', this.timeupdate);
     this.$refs.PlayerEl.addEventListener('loadeddata', this.mediaReady);
+    this.$refs.PlayerEl.addEventListener('ended', this.nextSong);
   },
 
   beforeDestroy() {
     this.$refs.PlayerEl.removeEventListener('timeupdate', this.timeupdate);
     this.$refs.PlayerEl.removeEventListener('loadeddata', this.mediaReady);
+    this.$refs.PlayerEl.removeEventListener('ended', this.nextSong);
   },
 
   methods: {
@@ -217,11 +219,16 @@ export default {
         this.setTime(0);
         return;
       }
+      const length = playingListIds.length;
+      const idx = this.getCurrentPlayingIdx;
+
+      this.SET_CURRENT_PLAY_SONG(
+        this.getSongById(playingListIds[idx ? idx - 1 : length - 1])
+      );
     },
     nextSong() {
       const playingListIds = this.getPlayingListIds;
       const state = this.repeatState % 3;
-      console.log(state);
       if (state === 2) {
         /* repeat one */
         this.setTime(0);
