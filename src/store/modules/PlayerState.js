@@ -18,7 +18,9 @@ const PlayerState = {
         }
       */
     },
-    playingListIds: []
+    playingListIds: [],
+    setListIds: [],
+    shuffleState: 0
   }),
   getters: {
     getSourceById: state => id => state.playSources[id],
@@ -37,8 +39,10 @@ const PlayerState = {
         : null,
     getCurrentPlaying: state => state.currentPlaying,
     getPlayingListIds: state => state.playingListIds,
+    getSetListIds: state => state.setListIds,
     getPlayLists: state =>
-      Object.keys(state.playLists).length ? state.playLists : null
+      Object.keys(state.playLists).length ? state.playLists : null,
+    getShuffleState: state => state.shuffleState
   },
   mutations: {
     setPlaySource(state, source) {
@@ -58,6 +62,8 @@ const PlayerState = {
       this._vm.$set(state.playLists, playList.id, playList);
     },
     setPlayingListIds(state, songIds) {
+      this._vm.$set(state, 'setListIds', songIds);
+      // TODO: get shuffle state and sort songIds to playingListIds;
       this._vm.$set(state, 'playingListIds', songIds);
     },
     setCurrentPlaySong(state, song) {
@@ -100,6 +106,12 @@ const PlayerState = {
     },
     SET_CURRENT_PLAY_SONG({ commit }, song) {
       commit('setCurrentPlaySong', song);
+    },
+    SET_PLAYING_LIST_SHUFFLE({ commit }) {
+      // TODO
+    },
+    SET_SHUFFLE_STATE({ commit }) {
+      // TODO
     },
 
     ADD_SONG_TO_LIST({ commit }, { listId, songId }) {

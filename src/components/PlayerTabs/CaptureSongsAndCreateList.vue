@@ -34,11 +34,14 @@
               label="開始時間"
               placeholder="秒數 或 時:分:秒"
               hint="ex: 207 或 00:03:27"
-              :rules="[]"
-              lazy-validation
+              :error-messages="startError"
+              @focus="
+                startError = null;
+                endError = null;
+              "
             >
               <template #append>
-                <v-btn text x-small @click="start = 0">開頭</v-btn>
+                <v-btn text x-small @click="start = $s2hms(0)">開頭</v-btn>
               </template>
             </v-text-field>
           </v-col>
@@ -48,11 +51,18 @@
               label="結束時間"
               placeholder="秒數 或 時:分:秒"
               hint="ex: 526 或 00:08:46"
-              :rules="[]"
-              lazy-validation
+              :error-messages="endError"
+              @focus="
+                startError = null;
+                endError = null;
+              "
             >
               <template #append>
-                <v-btn text x-small @click="end = +PlaySource.lengthSeconds">
+                <v-btn
+                  text
+                  x-small
+                  @click="end = $s2hms(+PlaySource.lengthSeconds)"
+                >
                   結尾
                 </v-btn>
               </template>
@@ -122,23 +132,15 @@
                   <v-list dense>
                     <v-list-item @click="DELETE_SONG(song)">
                       <v-list-item-icon>
-                        <v-icon color="error">
-                          mdi-delete
-                        </v-icon>
+                        <v-icon color="error">mdi-delete</v-icon>
                       </v-list-item-icon>
-                      <v-list-item-content>
-                        刪除
-                      </v-list-item-content>
+                      <v-list-item-content>刪除</v-list-item-content>
                     </v-list-item>
                     <v-list-item @click="openAddToListFrame(song)">
                       <v-list-item-icon>
-                        <v-icon color="error">
-                          mdi-plus
-                        </v-icon>
+                        <v-icon color="error">mdi-plus</v-icon>
                       </v-list-item-icon>
-                      <v-list-item-content>
-                        新增至清單
-                      </v-list-item-content>
+                      <v-list-item-content>新增至清單</v-list-item-content>
                     </v-list-item>
                   </v-list>
                 </v-menu>
@@ -150,25 +152,12 @@
       </v-card>
     </v-card-text>
 
-    <v-dialog v-model="isAddToListDialogShow" scrollable>
+    <v-dialog v-model="isAddToListDialogShow" max-width="400" scrollable>
       <v-card>
-        <v-card-title>
-          要加入的播放清單
-        </v-card-title>
+        <v-card-title>要加入的播放清單</v-card-title>
+        <v-divider></v-divider>
         <v-card-text>
           <v-list dense>
-            <v-list-item>
-              <v-text-field
-                v-model="newListName"
-                prepend-icon="mdi-plus"
-                placeholder="新增清單"
-              >
-                <template #append v-if="!!newListName">
-                  <v-btn text @click="addToList()">新增</v-btn>
-                </template>
-              </v-text-field>
-            </v-list-item>
-            <v-divider></v-divider>
             <template v-for="list in getPlayLists">
               <v-list-item
                 :key="`add-list:${list.id}`"
@@ -180,6 +169,13 @@
               </v-list-item>
               <v-divider :key="`add-list:${list.id}-divider`"></v-divider>
             </template>
+            <v-list-item>
+              <v-text-field v-model="newListName" label="新增清單" hide-details>
+                <template #append v-if="!!newListName">
+                  <v-btn text @click="addToList()">新增</v-btn>
+                </template>
+              </v-text-field>
+            </v-list-item>
           </v-list>
         </v-card-text>
       </v-card>
@@ -221,7 +217,10 @@ export default {
 
       isAddToListDialogShow: false,
       newListName: '',
-      addingSong: Song
+      addingSong: Song,
+
+      startError: null,
+      endError: null
     };
   },
 
@@ -325,10 +324,19 @@ export default {
       }
     },
     setSong() {
-      // TODO: start end validate
-      if (!this.$refs.tagCheck.validate()) return;
+      let flag = true;
       const start = this.$hms2s(this.start);
       const end = this.$hms2s(this.end);
+      if (start >= end) {
+        this.startError = '開頭時間需比結束時間少';
+        flag = false;
+      }
+
+      if (end > +this.PlaySource.lengthSeconds) {
+        this.endError = '結束時間超過歌曲長度';
+        flag = false;
+      }
+      if (!this.$refs.tagCheck.validate() || !flag) return;
 
       const song = new Song({
         src: this.PlaySource.src,

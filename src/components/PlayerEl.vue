@@ -62,6 +62,8 @@
             :max="100"
             @change="setVolumeToDb"
             hide-details
+            :thumb-size="24"
+            thumb-label
           ></v-slider>
         </v-card>
       </v-list-item>
@@ -168,7 +170,7 @@ export default {
   },
 
   methods: {
-    ...mapActions(['SET_CURRENT_PLAY_SONG']),
+    ...mapActions(['SET_CURRENT_PLAY_SONG', 'SET_SHUFFLE_STATE']),
     // setting
     mediaReady() {
       this.$refs.PlayerEl.currentTime = this.Song.start;
@@ -272,7 +274,11 @@ export default {
     changeShuffleState() {
       this.shuffleState++;
       this.$db.set('shuffle', this.shuffleState % 2).write();
-      // if shuffle reset playing list
+      this.SET_SHUFFLE_STATE(this.shuffleState);
+      if (this.shuffleState % 2) {
+        // if shuffle reset playing list
+        // this.SET_PLAYING_LIST_SHUFFLE();
+      }
     },
     changeRepeatState() {
       this.repeatState++;

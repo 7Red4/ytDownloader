@@ -49,7 +49,7 @@
     </v-card>
 
     <v-dialog v-model="listDialog" persistent scrollable>
-      <v-card>
+      <v-card max-height="620">
         <v-card-title class="pt-6">
           <v-row>
             <v-col cols="12" class="py-0">
@@ -142,6 +142,7 @@ export default {
           this.$refs.playListTitleEl.focus();
         });
       } else {
+        this.filter = 'all';
         this.$refs.playListTitleEl.blur();
       }
     }
@@ -166,7 +167,9 @@ export default {
     edit(list) {
       this.listId = list.id;
       this.playListTitle = list.title;
-      this.pickingList = Object.values(this.getSongs);
+      this.pickingList = Object.values(this.getSongs).sort(song =>
+        list.songs.includes(song.id) ? -1 : 1
+      );
       this.pickedSongIds = list.songs;
       this.listDialog = true;
     },

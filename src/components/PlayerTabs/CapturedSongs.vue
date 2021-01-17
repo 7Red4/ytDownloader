@@ -8,6 +8,7 @@
       v-for="(playSource, id) of getPlaySources"
       :key="id"
       @click="$emit('edit-source', id)"
+      flat
     >
       <VideoInfoCard :videoDetails="playSource.videoDetails" />
     </v-card>

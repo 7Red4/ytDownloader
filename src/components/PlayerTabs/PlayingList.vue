@@ -7,12 +7,17 @@
     <v-card-text>
       <v-card v-if="getCurrentPlaying">
         <v-card-title>
-          <p>現正播放</p>
+          <p>正在播放</p>
         </v-card-title>
         <v-divider></v-divider>
         <v-card-text>
           <v-list>
             <v-list-item @click="showShongDetail(getCurrentPlaying)">
+              <v-list-item-avatar>
+                <v-icon color="primary">
+                  mdi-music
+                </v-icon>
+              </v-list-item-avatar>
               <v-list-item-content>
                 <v-list-item-title class="text-truncate">
                   {{ getCurrentPlaying.tag }}
@@ -32,7 +37,7 @@
       <div class="py-2"></div>
       <v-card v-if="getPlayingListIds.length">
         <v-card-title>
-          <p>播放中的清單</p>
+          <p>播放佇列</p>
         </v-card-title>
         <v-divider></v-divider>
         <v-card-text>
