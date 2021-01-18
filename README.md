@@ -1,12 +1,16 @@
+[English version](/README_en.md)
+
+[For Dev 給開發](/README_dev.md)
+
 # YT 下載器
 
 可以下載 youtube 影片的跨平台桌面應用程式
 
-ver 1.3.0
+ver 2.0.0
 
-[windows download 載點](/release/1.3.0/win/yt-downloader%20Setup%201.3.0.exe?raw=true)
+[windows 載點](/release/2.0.0/win/yt-downloader%20Setup%202.0.0.exe?raw=true)
 
-[mac download 載點](/release/1.3.0/mac/)
+<!-- [mac 載點](/release/2.0.0/mac/) -->
 
 ## 使用方法
 
@@ -31,76 +35,7 @@ ver 1.3.0
 - [ ] 大量下載
 
 ### Player
-- [ ] 透過時間標籤製作歌單
+- [x] 透過時間標籤製作歌單
+- [x] 透過當按匯入歌單
 - [ ] 儲存歌單
 - [ ] 分享歌單
-
----
-
-for English
-
-# YT downloader
-
-A cross-platform desktop app for downloading youtube videos
-
-## USAGE
-
-![](https://i.imgur.com/e35m6KU.png)
-
-- Enter a youtube url. (It will auto fill the field if your clipboad has a youtube url)
-- Change the file name of the clip to save. (default to the origin title)
-- Pick a path to save.
-- Click download!
-- Take a seat and have some coffee till it's done.
-
-## FEATURE
-
-### Downloader
-
-- [x] Download youtube video
-- [x] Pick resolution
-- [x] Light / dark mode
-- [x] Download while it's even in streaming
-- [x] Download thumbnail
-
-- [ ] Download video/audio only
-- [ ] Multiple download
-
-### Player
-- [ ] create playlist by timestamps
-- [ ] save playlist
-- [ ] share playlist
-
----
-
----
-
----
-
-# For Dev 給開發
-
-This project is using [`electron js`](https://www.electronjs.org/) with [`vue js`](https://vuejs.org/) built by [`vue-cli-plugin-electron-builder`](https://nklayman.github.io/vue-cli-plugin-electron-builder/) and [`Vuetify`](https://vuetifyjs.com/en/) as UI components
-
-## 環境需求 enviorment require
-
-```
-node js
-```
-
-## 套件安裝 install dependecies
-
-```
-npm install
-```
-
-## 啟動 run dev
-
-```
-npm run dev
-```
-
-## 打包 build
-
-```
-npm run build
-```

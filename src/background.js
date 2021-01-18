@@ -9,7 +9,6 @@ import { createProtocol } from 'vue-cli-plugin-electron-builder/lib';
 import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer';
 import { getInfo, start, record } from '@/controller/ytdl.js';
 import consola from 'consola';
-import { platform } from 'custom-electron-titlebar/lib/common/platform';
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
 

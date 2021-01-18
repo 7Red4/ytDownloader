@@ -98,7 +98,7 @@ export default {
   },
 
   mounted() {
-    console.log(this.$db.getState());
+    // console.log(this.$db.getState());
     const isDark = this.$db.get('dark').value();
     this.$vuetify.theme.dark = !!isDark;
 

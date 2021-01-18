@@ -78,8 +78,10 @@
                   hide-details
                   :input-value="pickedSongIds.length === pickingList.length"
                   :indeterminate="
-                    pickedSongIds.length &&
+                    !!(
+                      pickedSongIds.length &&
                       pickedSongIds.length < pickingList.length
+                    )
                   "
                   class="ma-0"
                   readonly
@@ -184,7 +186,7 @@ export default {
       }
     },
     newCreate() {
-      this.pickingList = this.getSongs;
+      this.pickingList = Object.values(this.getSongs);
       this.listDialog = true;
     },
     play(songs) {

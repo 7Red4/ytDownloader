@@ -101,7 +101,6 @@ const record = {
             consola.error('delete error');
             consola.error(error);
           }
-          console.log('CLOSEEEE');
           this.event.reply('download-complete');
           // Cleanup
           clearInterval(progressbarHandle);

@@ -136,7 +136,13 @@
                   </span>
                 </v-list-item-content>
                 <span>歌曲長度: {{ $s2hms(song.length) }}</span>
-                <v-icon class="ml-5" @click="SET_CURRENT_PLAY_SONG(song)">
+                <v-icon
+                  class="ml-5"
+                  @click="
+                    SET_PLAYING_LIST_IDS([]);
+                    SET_CURRENT_PLAY_SONG(song);
+                  "
+                >
                   mdi-play-circle
                 </v-icon>
                 <v-menu left>
@@ -266,6 +272,7 @@ export default {
       'SET_SONG',
       'DELETE_SONG',
       'SET_CURRENT_PLAY_SONG',
+      'SET_PLAYING_LIST_IDS',
       'SET_PLAY_LIST',
       'ADD_SONG_TO_LIST'
     ]),
@@ -305,7 +312,6 @@ export default {
         Source.onBlobReady(async () => {
           if (!existedSource) Source.setSrc(URL.createObjectURL(Source.audio));
           for (const song of songs) {
-            console.log(song);
             let flag = true;
             const start = this.$hms2s(song.start);
             const end = this.$hms2s(song.end);
