@@ -14,7 +14,7 @@ ver 2.0.0
 
 ## USAGE
 
-![](https://i.imgur.com/e35m6KU.png)
+![](https://i.imgur.com/RZxgorw.png)
 
 - Enter a youtube url. (It will auto fill the field if your clipboad has a youtube url)
 - Change the file name of the clip to save. (default to the origin title)
