@@ -1,0 +1,44 @@
+@import url('../css/roboto/roboto-fontface.css');
+@import url('./NotoSansTC.scss');
+@import url('./variables.scss');
+
+:root, body {
+  overflow: hidden;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  width: 6px;
+  border-radius: 100px;
+}
+
+
+.theme--light {
+  &::-webkit-scrollbar {
+    background-color: #fafafa;
+    &-thumb {
+      background-color: #d01d8f;
+    }
+  }
+}
+
+.theme--dark {
+  &::-webkit-scrollbar {
+    background-color: #1e1e1e;
+    &-thumb {
+      background-color: #007cd6;
+    }
+  }
+}
+
+.v-application {
+    max-height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+  *:not(.mdi) {
+    font-family: 'Noto Sans TC', Roboto, sans-serif !important;
+  }
+}

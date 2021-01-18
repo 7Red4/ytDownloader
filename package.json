@@ -1,6 +1,6 @@
 {
   "name": "yt-downloader",
-  "version": "1.2.0",
+  "version": "2.0.0beta",
   "description": "A youtube downloader by ytdl-core",
   "private": true,
   "scripts": {
@@ -17,18 +17,18 @@
   "dependencies": {
     "@mdi/font": "^3.6.95",
     "app-root-dir": "^1.0.2",
-    "cli-progress": "^3.8.2",
     "consola": "^2.15.0",
     "core-js": "^3.6.5",
     "ffmpeg-static": "^4.2.7",
     "filenamify": "^4.2.0",
+    "lowdb": "^1.0.0",
     "roboto-fontface": "*",
-    "stream-progressbar": "^1.4.0",
+    "stream-to-blob": "^2.0.1",
     "vue": "^2.6.11",
     "vue-router": "^3.2.0",
     "vuetify": "^2.2.11",
     "vuex": "^3.4.0",
-    "ytdl-core": "^4.3.0"
+    "ytdl-core": "^4.4.3"
   },
   "devDependencies": {
     "@vue/cli-plugin-babel": "~4.5.0",

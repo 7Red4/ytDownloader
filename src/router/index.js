@@ -1,14 +1,20 @@
 import Vue from 'vue';
 import VueRouter from 'vue-router';
-import Home from '../views/Home.vue';
+import Downloader from '../views/Downloader.vue';
+import Player from '../views/Player.vue';
 
 Vue.use(VueRouter);
 
 const routes = [
   {
     path: '/',
-    name: 'Home',
-    component: Home
+    name: 'Downloader',
+    component: Downloader
+  },
+  {
+    path: '/Player',
+    name: 'Player',
+    component: Player
   }
 ];
 

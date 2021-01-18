@@ -1,5 +1,9 @@
 'use strict';
 
+import fs from 'fs';
+import https from 'https';
+import os from 'os';
+
 import { app, protocol, BrowserWindow, ipcMain, dialog } from 'electron';
 import { createProtocol } from 'vue-cli-plugin-electron-builder/lib';
 import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer';
@@ -8,6 +12,7 @@ import consola from 'consola';
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
+let win = {};
 // Scheme must be registered before the app is ready
 protocol.registerSchemesAsPrivileged([
   { scheme: 'app', privileges: { secure: true, standard: true } }
@@ -15,9 +20,11 @@ protocol.registerSchemesAsPrivileged([
 
 async function createWindow() {
   // Create the browser window.
-  const win = new BrowserWindow({
+  win = new BrowserWindow({
+    frame: false,
     width: isDevelopment ? 1240 : 810,
     height: 960,
+    titleBarStyle: 'hidden',
     webPreferences: {
       // Use pluginOptions.nodeIntegration, leave this alone
       // See nklayman.github.io/vue-cli-plugin-electron-builder/guide/security.html#node-integration for more info
@@ -81,6 +88,20 @@ if (isDevelopment) {
   }
 }
 
+// ipc events
+ipcMain.on('get-platform', event => {
+  const platform = os.platform();
+  event.reply('get-platform-reply', platform);
+});
+
+ipcMain.on('minimize-window', () => win.minimize && win.minimize());
+ipcMain.on('toggle-window', () =>
+  win.isMaximized() ? win.unmaximize() : win.maximize()
+);
+ipcMain.on('close-window', () => {
+  process.exit(0);
+});
+
 ipcMain.on('get-yt-info', async (event, url) => {
   try {
     const info = await getInfo(url);
@@ -112,6 +133,33 @@ ipcMain.on('exit', async (event, req) => {
     await record.stop();
   } catch (error) {
     event.reply('stoped-error');
+    consola.error(error);
+  }
+});
+
+ipcMain.on('pick-thumbnail-path', async (event, title) => {
+  try {
+    const path = dialog.showSaveDialogSync({
+      defaultPath: title,
+      filters: [{ name: 'Images', extensions: ['jpg', 'png'] }]
+    });
+    event.reply('pick-thumbnail-path-reply', path);
+  } catch (error) {
+    consola.error(error);
+  }
+});
+
+ipcMain.on('download-thumbnail', async (event, { url, path }) => {
+  try {
+    const file = fs.createWriteStream(path);
+    https.get(url, response => {
+      response.pipe(file);
+      response.on('close', () => {
+        event.reply('download-thumbnail-complete');
+      });
+    });
+  } catch (error) {
+    event.reply('download-thumbnail-fail', error);
     consola.error(error);
   }
 });
