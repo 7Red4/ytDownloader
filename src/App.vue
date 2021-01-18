@@ -106,6 +106,11 @@ export default {
     if (!!last_route && this.$route.path !== last_route) {
       this.$router.push(last_route);
     }
+
+    this.$store.dispatch(
+      'SET_SHUFFLE_STATE',
+      this.$db.get('shuffle').value() || 0
+    );
   },
 
   methods: {

@@ -72,6 +72,25 @@
         </v-card-title>
         <v-card-text>
           <v-list>
+            <v-list-item @click="pickAll">
+              <v-list-item-icon>
+                <v-checkbox
+                  hide-details
+                  :input-value="pickedSongIds.length === pickingList.length"
+                  :indeterminate="
+                    pickedSongIds.length &&
+                      pickedSongIds.length < pickingList.length
+                  "
+                  class="ma-0"
+                  readonly
+                ></v-checkbox>
+              </v-list-item-icon>
+              <v-list-item-content>
+                <v-list-item-title>
+                  全選
+                </v-list-item-title>
+              </v-list-item-content>
+            </v-list-item>
             <v-list-item-group v-model="pickedSongIds" multiple>
               <template v-for="song in pickingList">
                 <v-list-item
@@ -113,8 +132,6 @@
 <script>
 import { mapGetters, mapActions } from 'vuex';
 
-// TODO: filter the songs by all, added, not added
-
 export default {
   data() {
     return {
@@ -155,6 +172,17 @@ export default {
       'SET_CURRENT_PLAY_SONG',
       'DELETE_PLAY_LIST'
     ]),
+    pickAll(e) {
+      const isAll = this.pickedSongIds.length === this.pickingList.length;
+      const isIndeterminate =
+        this.pickedSongIds.length &&
+        this.pickedSongIds.length < this.pickingList.length;
+      if (isAll || isIndeterminate) {
+        this.pickedSongIds = [];
+      } else {
+        this.pickedSongIds = this.pickingList.map(({ id }) => id);
+      }
+    },
     newCreate() {
       this.pickingList = this.getSongs;
       this.listDialog = true;

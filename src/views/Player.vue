@@ -10,7 +10,10 @@
 
       <v-window v-model="currentTab" class="pt-4">
         <v-window-item :value="0">
-          <CaptureSongsAndCreateList :editing-source-id="editingSourceId" />
+          <CaptureSongsAndCreateList
+            :editing-source-id="editingSourceId"
+            @to-captured="currentTab = 1"
+          />
         </v-window-item>
         <v-window-item :value="1">
           <CapturedSongs @edit-source="editSource" />

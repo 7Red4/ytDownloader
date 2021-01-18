@@ -170,7 +170,11 @@ export default {
   },
 
   methods: {
-    ...mapActions(['SET_CURRENT_PLAY_SONG', 'SET_SHUFFLE_STATE']),
+    ...mapActions([
+      'SET_CURRENT_PLAY_SONG',
+      'SET_SHUFFLE_STATE',
+      'SET_PLAYING_LIST_SHUFFLE'
+    ]),
     // setting
     mediaReady() {
       this.$refs.PlayerEl.currentTime = this.Song.start;
@@ -273,12 +277,12 @@ export default {
     },
     changeShuffleState() {
       this.shuffleState++;
-      this.$db.set('shuffle', this.shuffleState % 2).write();
-      this.SET_SHUFFLE_STATE(this.shuffleState);
-      if (this.shuffleState % 2) {
-        // if shuffle reset playing list
-        // this.SET_PLAYING_LIST_SHUFFLE();
-      }
+      const state = this.shuffleState % 2;
+      this.$db.set('shuffle', state).write();
+      this.SET_SHUFFLE_STATE(state);
+      this.$nextTick(() => {
+        this.SET_PLAYING_LIST_SHUFFLE();
+      });
     },
     changeRepeatState() {
       this.repeatState++;

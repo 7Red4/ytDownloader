@@ -1,77 +1,89 @@
 <template>
   <v-card class="video_info_card mb-10">
-    <v-row align="center" class="px-3">
-      <v-col cols="4">
-        <v-img
-          :src="
-            videoDetails.thumbnails.length
-              ? videoDetails.thumbnails[videoDetails.thumbnails.length - 1].url
-              : ''
-          "
-        ></v-img>
-      </v-col>
+    <template v-if="videoDetails">
+      <v-row align="center" class="px-3">
+        <v-col cols="4">
+          <v-img
+            :src="
+              videoDetails.thumbnails.length
+                ? videoDetails.thumbnails[videoDetails.thumbnails.length - 1]
+                    .url
+                : ''
+            "
+          ></v-img>
+        </v-col>
 
-      <v-col cols="8">
-        <v-card-title>
-          {{ videoDetails.title.slice(0, 40) }}
-          {{ videoDetails.title.length > 40 ? '...' : '' }}
-        </v-card-title>
-        <v-card-text>
-          {{ videoDetails.description.slice(0, 120) }}
-          {{ videoDetails.description.length > 120 ? '...' : '' }}
-        </v-card-text>
-        <v-card-text class="d-flex">
-          時間長度 : {{ length }}
-          <v-spacer></v-spacer>
-          <v-btn text small @click="openLink" color="primary">連結</v-btn>
-        </v-card-text>
-      </v-col>
-    </v-row>
+        <v-col cols="8">
+          <v-card-title>
+            {{ videoDetails.title.slice(0, 40) }}
+            {{ videoDetails.title.length > 40 ? '...' : '' }}
+          </v-card-title>
+          <v-card-text>
+            {{ videoDetails.description.slice(0, 120) }}
+            {{ videoDetails.description.length > 120 ? '...' : '' }}
+          </v-card-text>
+          <v-card-text class="d-flex">
+            時間長度 : {{ length }}
+            <v-spacer></v-spacer>
+            <v-btn text small @click="openLink" color="primary">連結</v-btn>
+          </v-card-text>
+        </v-col>
+      </v-row>
 
-    <v-menu v-if="thumbnail" min-width="200" :nudge-top="16" offset-y left>
-      <template #activator="{ on }">
-        <v-btn v-on="on" class="video_info_card-more" icon>
-          <v-icon>mdi-dots-vertical</v-icon>
-        </v-btn>
-      </template>
+      <v-menu v-if="thumbnail" min-width="200" :nudge-top="16" offset-y left>
+        <template #activator="{ on }">
+          <v-btn v-on="on" class="video_info_card-more" icon>
+            <v-icon>mdi-dots-vertical</v-icon>
+          </v-btn>
+        </template>
 
-      <v-list>
-        <v-list-item @click="isThumbnailDownloadDialogOpen = true">
-          下載首圖
-        </v-list-item>
-      </v-list>
-    </v-menu>
-
-    <v-dialog
-      v-model="isThumbnailDownloadDialogOpen"
-      max-width="500px"
-      transition="dialog-transition"
-    >
-      <v-card>
-        <v-card-title>
-          選擇解析度 (寬 x 高)
-        </v-card-title>
-        <v-list v-if="videoDetails && videoDetails.thumbnails.length">
-          <v-list-item
-            v-for="resolution in videoDetails.thumbnails"
-            :key="resolution.url"
-            @click="pickThumbnailPath(resolution.url)"
-          >
-            {{ resolution.width }} x {{ resolution.height }}
+        <v-list>
+          <v-list-item @click="isThumbnailDownloadDialogOpen = true">
+            下載首圖
           </v-list-item>
         </v-list>
-      </v-card>
-    </v-dialog>
+      </v-menu>
 
-    <v-snackbar v-model="snack" dark @input="v => !v && (snackMsg = '')">
-      <div class="d-flex align-center">
-        {{ snackMsg }}
-        <v-spacer></v-spacer>
-        <v-btn text icon color="error" @click.native="snack = false">
-          <v-icon>mdi-close</v-icon>
-        </v-btn>
-      </div>
-    </v-snackbar>
+      <v-dialog
+        v-model="isThumbnailDownloadDialogOpen"
+        max-width="500px"
+        transition="dialog-transition"
+      >
+        <v-card>
+          <v-card-title>
+            選擇解析度 (寬 x 高)
+          </v-card-title>
+          <v-list v-if="videoDetails && videoDetails.thumbnails.length">
+            <v-list-item
+              v-for="resolution in videoDetails.thumbnails"
+              :key="resolution.url"
+              @click="pickThumbnailPath(resolution.url)"
+            >
+              {{ resolution.width }} x {{ resolution.height }}
+            </v-list-item>
+          </v-list>
+        </v-card>
+      </v-dialog>
+
+      <v-snackbar v-model="snack" dark @input="v => !v && (snackMsg = '')">
+        <div class="d-flex align-center">
+          {{ snackMsg }}
+          <v-spacer></v-spacer>
+          <v-btn text icon color="error" @click.native="snack = false">
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </div>
+      </v-snackbar>
+
+      <v-fade-transition>
+        <div v-if="loading" class="loading_layout">
+          <v-progress-circular
+            indeterminate
+            color="primary"
+          ></v-progress-circular>
+        </div>
+      </v-fade-transition>
+    </template>
   </v-card>
 </template>
 
@@ -84,6 +96,10 @@ export default {
       required: true
     },
     thumbnail: {
+      type: Boolean,
+      default: false
+    },
+    loading: {
       type: Boolean,
       default: false
     }
@@ -159,5 +175,16 @@ export default {
     top: 4px;
     right: 6px;
   }
+}
+.loading_layout {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  background-color: #a4a4a487;
 }
 </style>

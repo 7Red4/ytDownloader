@@ -63,11 +63,20 @@ const PlayerState = {
     },
     setPlayingListIds(state, songIds) {
       this._vm.$set(state, 'setListIds', songIds);
-      // TODO: get shuffle state and sort songIds to playingListIds;
       this._vm.$set(state, 'playingListIds', songIds);
     },
     setCurrentPlaySong(state, song) {
       state.currentPlaying = song;
+    },
+    setPlayingListShuffle(state, isReset) {
+      if (isReset) {
+        state.playingListIds = [...state.setListIds];
+      } else {
+        state.playingListIds.sort(() => Math.random() - 0.5);
+      }
+    },
+    setShuffleState(state, shuffleState) {
+      state.shuffleState = shuffleState;
     },
 
     addSongToList(state, { listId, songId }) {
@@ -101,17 +110,18 @@ const PlayerState = {
     SET_PLAY_LIST({ commit }, playList) {
       commit('setPlayList', playList);
     },
-    SET_PLAYING_LIST_IDS({ commit }, songIds) {
+    SET_PLAYING_LIST_IDS({ state, commit, dispatch }, songIds) {
       commit('setPlayingListIds', songIds);
+      state.shuffleState && dispatch('SET_PLAYING_LIST_SHUFFLE');
     },
     SET_CURRENT_PLAY_SONG({ commit }, song) {
       commit('setCurrentPlaySong', song);
     },
-    SET_PLAYING_LIST_SHUFFLE({ commit }) {
-      // TODO
+    SET_PLAYING_LIST_SHUFFLE({ state, commit }) {
+      commit('setPlayingListShuffle', state.shuffleState ? null : 'reset');
     },
-    SET_SHUFFLE_STATE({ commit }) {
-      // TODO
+    SET_SHUFFLE_STATE({ commit }, shuffleState) {
+      commit('setShuffleState', shuffleState);
     },
 
     ADD_SONG_TO_LIST({ commit }, { listId, songId }) {

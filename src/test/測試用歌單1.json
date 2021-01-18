@@ -1,0 +1,38 @@
+[
+  {
+    "ytUrl": "https://www.youtube.com/watch?v=aZrQCuaQKpU",
+    "songs": [
+      {
+        "tag": "盜作",
+        "start": "8:05",
+        "end": "12:03"
+      },
+      {
+        "tag": "BLUE CLAPPER",
+        "start": "18:02",
+        "end": "22:10"
+      }
+    ]
+  },
+  {
+    "ytUrl": "https://www.youtube.com/watch?v=mBqt_QO01bA",
+    "songs": [
+      {
+        "tag": "where ever you are",
+        "start": "6:02",
+        "end": "10:51"
+      },
+      {
+        "tag": "カブトムシ - aiko",
+        "start": "14:49",
+        "end": "19:56"
+      },
+      {
+        "tag": "車輪の唄 -BUMP OF CHICKEN",
+        "start": "22:51",
+        "end": "27:10"
+      }
+    ]
+  }
+  
+]

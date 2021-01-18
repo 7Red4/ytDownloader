@@ -1,5 +1,18 @@
 <template>
   <v-card class="fill-height">
+    <v-expansion-panels>
+      <v-expansion-panel>
+        <v-expansion-panel-header>從檔案匯入歌單</v-expansion-panel-header>
+        <v-expansion-panel-content>
+          <v-file-input
+            v-model="uploadFile"
+            label="從檔案匯入歌單"
+            @change="handleFile"
+            :error-messages="isFileError ? '檔案有誤' : null"
+          ></v-file-input>
+        </v-expansion-panel-content>
+      </v-expansion-panel>
+    </v-expansion-panels>
     <v-card-text>
       <v-text-field
         v-model="ytUrl"
@@ -21,6 +34,7 @@
 
       <VideoInfoCard
         v-if="(PlaySource.videoDetails || hasSource) && ytId === PlaySource.id"
+        :loading="!PlaySource.src"
         :videoDetails="
           hasSource ? getSourceById(ytId).videoDetails : PlaySource.videoDetails
         "
@@ -191,9 +205,6 @@ import Song from '@/classes/Song';
 
 import VideoInfoCard from '@/components/VideoInfoCard';
 
-const isDev = process.env.NODE_ENV !== 'production';
-import testData from '@/test/test_playSource';
-
 export default {
   components: { VideoInfoCard },
 
@@ -220,7 +231,10 @@ export default {
       addingSong: Song,
 
       startError: null,
-      endError: null
+      endError: null,
+
+      isFileError: false,
+      uploadFile: null
     };
   },
 
@@ -246,13 +260,6 @@ export default {
     }
   },
 
-  async mounted() {
-    if (isDev) {
-      this.ytUrl = testData.ytUrl;
-      this.capture();
-    }
-  },
-
   methods: {
     ...mapActions([
       'SET_PLAY_SOURCE',
@@ -262,18 +269,71 @@ export default {
       'SET_PLAY_LIST',
       'ADD_SONG_TO_LIST'
     ]),
-    /* async */ byImport() {
-      // TODO:
+    handleFile(file) {
+      this.isFileError = false;
+      if (!file) return;
+      this.isLoadingFile = true;
+
+      const fr = new FileReader();
+
+      const data = fr.readAsText(file);
+      fr.onload = () => {
+        try {
+          const playlist = JSON.parse(fr.result);
+          this.importPlaylist(playlist);
+          this.$emit('to-captured');
+        } catch (error) {
+          this.isFileError = true;
+          console.error(error);
+        } finally {
+          this.isLoadingFile = false;
+          this.uploadFile = null;
+        }
+      };
     },
-    async setTestData() {
-      const wait = this.$nextTick;
-      await wait();
-      if (this.ytUrl !== testData.ytUrl) return;
-      for (const song of testData.songs) {
-        Object.keys(song).forEach(k => (this[k] = song[k]));
-        await wait();
-        this.setSong();
-        await wait();
+    async importPlaylist(playlist) {
+      const wait = () => {
+        return new Promise(resolve => setTimeout(resolve, 2));
+      };
+      for (const { ytUrl, songs } of playlist) {
+        const ytId = this.$pyt(ytUrl);
+        const existedSource = this.getSourceById(ytId);
+        if (!ytId) throw new Error('invalid url');
+
+        const Source = existedSource || new PlaySource({ url: ytUrl });
+        if (!existedSource) this.SET_PLAY_SOURCE(Source);
+        Source.onBlobReady(async () => {
+          if (!existedSource) Source.setSrc(URL.createObjectURL(Source.audio));
+          for (const song of songs) {
+            console.log(song);
+            let flag = true;
+            const start = this.$hms2s(song.start);
+            const end = this.$hms2s(song.end);
+            if (start >= end) {
+              flag = false;
+            }
+
+            if (end > +Source.lengthSeconds) {
+              flag = false;
+            }
+
+            if (flag) {
+              this.SET_SONG(
+                new Song({
+                  src: Source.src,
+                  ytId: Source.id,
+                  title: Source.title,
+                  author: Source.author,
+                  start,
+                  end,
+                  length: end - start,
+                  tag: song.tag || '未命名'
+                })
+              );
+            }
+            await wait();
+          }
+        });
       }
     },
     handleFocus(e) {
@@ -319,7 +379,6 @@ export default {
           this.SET_PLAY_SOURCE(this.PlaySource);
 
           this.loading = false;
-          if (isDev) this.setTestData();
         });
       }
     },
