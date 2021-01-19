@@ -10,7 +10,7 @@ ver 2.0.0
 
 [windows 載點](/release/2.0.0/win/yt-downloader%20Setup%202.0.0.exe?raw=true)
 
-<!-- [mac 載點](/release/2.0.0/mac/) -->
+[mac 載點](/release/2.0.0/mac/yt-downloader-2.0.0.dmg?raw=true)
 
 ## 使用方法
 
