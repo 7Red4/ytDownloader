@@ -6,11 +6,11 @@
 
 A cross-platform desktop app for downloading youtube videos
 
-ver 2.0.0
+ver 2.0.1
 
-[windows download](/release/2.0.0/win/yt-downloader%20Setup%202.0.0.exe?raw=true)
+[windows download](/release/2.0.1/win/yt-downloader%20Setup.exe?raw=true)
 
-[mac download](/release/2.0.0/mac/yt-downloader-2.0.0.dmg?raw=true)
+[mac download](/release/2.0.1/mac/yt-downloader.dmg?raw=true)
 
 ## USAGE
 
