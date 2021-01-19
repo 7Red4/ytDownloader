@@ -12,7 +12,17 @@
       >
         <v-card-title>
           此來源已新增
-          {{ getSongsBySourceId(id) ? getSongsBySourceId(id).length : 0 }} 首歌
+          <template v-if="!playSource.src">
+            <v-progress-circular
+              indeterminate
+              color="primary"
+              class="mx-3"
+            ></v-progress-circular>
+          </template>
+          <template v-else>
+            {{ getSongsBySourceId(id) ? getSongsBySourceId(id).length : 0 }}
+          </template>
+          首歌
         </v-card-title>
         <VideoInfoCard
           :videoDetails="playSource.videoDetails"
