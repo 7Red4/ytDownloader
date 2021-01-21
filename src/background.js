@@ -163,3 +163,25 @@ ipcMain.on('download-thumbnail', async (event, { url, path }) => {
     consola.error(error);
   }
 });
+
+ipcMain.on('pick-playlist-export-path', async (event, title) => {
+  try {
+    const path = dialog.showSaveDialogSync({
+      defaultPath: title,
+      filters: [{ name: 'Json', extensions: ['.json'] }]
+    });
+    event.reply('pick-playlist-export-path-reply', path);
+  } catch (error) {
+    consola.error(error);
+  }
+});
+
+ipcMain.on('export-list', async (event, { exporting, path }) => {
+  try {
+    fs.writeFileSync(path, JSON.stringify(exporting));
+    event.reply('export-done');
+  } catch (error) {
+    event.reply('export-fail', error);
+    consola.error(error);
+  }
+});

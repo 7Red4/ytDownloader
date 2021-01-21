@@ -2,13 +2,21 @@
   <v-card class="fill-height">
     <v-expansion-panels>
       <v-expansion-panel>
-        <v-expansion-panel-header>從檔案匯入歌單</v-expansion-panel-header>
+        <v-expansion-panel-header>
+          從檔案匯入歌曲 / 歌單
+        </v-expansion-panel-header>
         <v-expansion-panel-content>
           <v-file-input
-            v-model="uploadFile"
+            v-model="uploadSouceFile"
+            label="從檔案匯入歌曲"
+            @change="handleSourceFile"
+            :error-messages="isSourceFileError ? '檔案有誤' : null"
+          ></v-file-input>
+          <v-file-input
+            v-model="uploadPlayListFile"
             label="從檔案匯入歌單"
-            @change="handleFile"
-            :error-messages="isFileError ? '檔案有誤' : null"
+            @change="handlePlayListFile"
+            :error-messages="isPlayListFileError ? '檔案有誤' : null"
           ></v-file-input>
         </v-expansion-panel-content>
       </v-expansion-panel>
@@ -239,8 +247,10 @@ export default {
       startError: null,
       endError: null,
 
-      isFileError: false,
-      uploadFile: null
+      isSourceFileError: false,
+      isPlayListFileError: false,
+      uploadSouceFile: null,
+      uploadPlayListFile: null
     };
   },
 
@@ -276,8 +286,30 @@ export default {
       'SET_PLAY_LIST',
       'ADD_SONG_TO_LIST'
     ]),
-    handleFile(file) {
-      this.isFileError = false;
+    handleSourceFile(file) {
+      this.isSourceFileError = false;
+      if (!file) return;
+      this.isLoadingFile = true;
+
+      const fr = new FileReader();
+
+      const data = fr.readAsText(file);
+      fr.onload = () => {
+        try {
+          const sources = JSON.parse(fr.result);
+          this.importSource(sources);
+          this.$emit('to-captured');
+        } catch (error) {
+          this.isSourceFileError = true;
+          console.error(error);
+        } finally {
+          this.isLoadingFile = false;
+          this.uploadSouceFile = null;
+        }
+      };
+    },
+    handlePlayListFile(file) {
+      this.isPlayListFileError = false;
       if (!file) return;
       this.isLoadingFile = true;
 
@@ -287,22 +319,23 @@ export default {
       fr.onload = () => {
         try {
           const playlist = JSON.parse(fr.result);
-          this.importPlaylist(playlist);
+          this.importPlayList(playlist);
           this.$emit('to-captured');
         } catch (error) {
-          this.isFileError = true;
+          this.isPlayListFileError = true;
           console.error(error);
         } finally {
           this.isLoadingFile = false;
-          this.uploadFile = null;
+          this.uploadPlayListFile = null;
         }
       };
     },
-    async importPlaylist(playlist) {
+    async importSource(sources) {
       const wait = () => {
         return new Promise(resolve => setTimeout(resolve, 2));
       };
-      for (const { ytUrl, songs } of playlist) {
+
+      for (const { ytUrl, songs } of sources) {
         const ytId = this.$pyt(ytUrl);
         const existedSource = this.getSourceById(ytId);
         if (!ytId) throw new Error('invalid url');
@@ -310,7 +343,7 @@ export default {
         const Source = existedSource || new PlaySource({ url: ytUrl });
         if (!existedSource) this.SET_PLAY_SOURCE(Source);
         Source.onBlobReady(async () => {
-          if (!existedSource) Source.setSrc(URL.createObjectURL(Source.audio));
+          if (!Source.src) Source.setSrc(URL.createObjectURL(Source.audio));
           for (const song of songs) {
             let flag = true;
             const start = this.$hms2s(song.start);
@@ -339,6 +372,57 @@ export default {
             }
             await wait();
           }
+        });
+      }
+    },
+    async importPlayList(playList) {
+      const wait = () => {
+        return new Promise(resolve => setTimeout(resolve, 20));
+      };
+      const playlistId = Date.now();
+
+      const { title, songs } = playList;
+
+      this.SET_PLAY_LIST({
+        id: playlistId,
+        title,
+        songs: []
+      });
+      for (const song of songs) {
+        const existedSource = this.getSourceById(song.ytId);
+        const ytUrl = `https://youtube.com/watch?v=${song.ytId}`;
+        const Source = existedSource || new PlaySource({ url: ytUrl });
+        if (!existedSource) this.SET_PLAY_SOURCE(Source);
+        console.log(song.ytId, song.tag, '\n');
+        Source.onBlobReady(async () => {
+          if (!Source.src) Source.setSrc(URL.createObjectURL(Source.audio));
+          let flag = true;
+          const start = this.$hms2s(song.start);
+          const end = this.$hms2s(song.end);
+          if (start >= end) {
+            flag = false;
+          }
+
+          if (end > +Source.lengthSeconds) {
+            flag = false;
+          }
+
+          if (flag) {
+            const newSong = new Song({
+              src: Source.src,
+              ytId: Source.id,
+              title: Source.title,
+              author: Source.author,
+              start,
+              end,
+              length: end - start,
+              tag: song.tag || '未命名'
+            });
+
+            this.SET_SONG(newSong);
+            this.ADD_SONG_TO_LIST({ listId: playlistId, songId: newSong.id });
+          }
+          await wait();
         });
       }
     },
