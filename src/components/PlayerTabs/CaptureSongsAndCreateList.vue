@@ -359,17 +359,12 @@ export default {
         e && e.target.blur();
       }
     },
-    timestampRule(v) {
-      if (typeof v === 'number') {
-        return true;
-      } else {
-        return !!v || '填個時間吧';
-      }
-    },
     capture() {
       if (this.PlaySource) {
         if (this.PlaySource.url === this.ytUrl) return;
       }
+      if (!this.ytUrl || !this.ytId) return;
+
       this.loading = true;
 
       const source = this.getSourceById(this.ytUrl);
@@ -438,5 +433,3 @@ export default {
   }
 };
 </script>
-
-<style lang="scss" scoped></style>
