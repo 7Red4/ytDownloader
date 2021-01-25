@@ -330,7 +330,7 @@ export default {
         }
       };
     },
-    async importSource(sources) {
+    async importSource(sources, playlistId) {
       const wait = () => {
         return new Promise(resolve => setTimeout(resolve, 2));
       };
@@ -357,18 +357,23 @@ export default {
             }
 
             if (flag) {
-              this.SET_SONG(
-                new Song({
-                  src: Source.src,
-                  ytId: Source.id,
-                  title: Source.title,
-                  author: Source.author,
-                  start,
-                  end,
-                  length: end - start,
-                  tag: song.tag || '未命名'
-                })
-              );
+              const newSong = new Song({
+                src: Source.src,
+                ytId: Source.id,
+                title: Source.title,
+                author: Source.author,
+                start,
+                end,
+                length: end - start,
+                tag: song.tag || '未命名'
+              });
+              this.SET_SONG(newSong);
+              if (playlistId) {
+                this.ADD_SONG_TO_LIST({
+                  listId: playlistId,
+                  songId: newSong.id
+                });
+              }
             }
             await wait();
           }
@@ -376,9 +381,6 @@ export default {
       }
     },
     async importPlayList(playList) {
-      const wait = () => {
-        return new Promise(resolve => setTimeout(resolve, 20));
-      };
       const playlistId = Date.now();
 
       const { title, songs } = playList;
@@ -388,43 +390,22 @@ export default {
         title,
         songs: []
       });
-      for (const song of songs) {
-        const existedSource = this.getSourceById(song.ytId);
-        const ytUrl = `https://youtube.com/watch?v=${song.ytId}`;
-        const Source = existedSource || new PlaySource({ url: ytUrl });
-        if (!existedSource) this.SET_PLAY_SOURCE(Source);
-        console.log(song.ytId, song.tag, '\n');
-        Source.onBlobReady(async () => {
-          if (!Source.src) Source.setSrc(URL.createObjectURL(Source.audio));
-          let flag = true;
-          const start = this.$hms2s(song.start);
-          const end = this.$hms2s(song.end);
-          if (start >= end) {
-            flag = false;
-          }
 
-          if (end > +Source.lengthSeconds) {
-            flag = false;
-          }
+      // parse to source list
+      const sourceList = [];
+      const groupByYtId = {};
 
-          if (flag) {
-            const newSong = new Song({
-              src: Source.src,
-              ytId: Source.id,
-              title: Source.title,
-              author: Source.author,
-              start,
-              end,
-              length: end - start,
-              tag: song.tag || '未命名'
-            });
+      songs.forEach(song => {
+        !groupByYtId[song.ytId] && (groupByYtId[song.ytId] = []);
+        groupByYtId[song.ytId].push(song);
+      });
 
-            this.SET_SONG(newSong);
-            this.ADD_SONG_TO_LIST({ listId: playlistId, songId: newSong.id });
-          }
-          await wait();
-        });
+      for (const ytId in groupByYtId) {
+        const ytUrl = `https://youtube.com/watch?v=${ytId}`;
+        sourceList.push({ ytUrl, songs: groupByYtId[ytId] });
       }
+
+      await this.importSource(sourceList, playlistId);
     },
     handleFocus(e) {
       navigator.clipboard.readText().then(text => {

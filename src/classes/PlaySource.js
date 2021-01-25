@@ -37,7 +37,7 @@ export default class PlaySource {
         })
       ).then(res => {
         this.audio = res;
-        this.onBlobReadyCallback();
+        this.onBlobReadyCallback && this.onBlobReadyCallback();
       });
     }
   }
@@ -53,12 +53,12 @@ export default class PlaySource {
 
   audio = null /* Blob */;
 
-  onBlobReadyCallback = () => {};
+  onBlobReadyCallback = null;
   onBlobReady(callback) {
     if (this.audio) {
       callback();
     } else {
-      this.onBlobReadyCallback = callback;
+      if (!this.onBlobReadyCallback) this.onBlobReadyCallback = callback;
     }
   }
   setSrc(src) {

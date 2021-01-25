@@ -261,7 +261,6 @@ export default {
 
     // menu method
     exportThis(path) {
-      console.log(path);
       this.isExporting = true;
 
       const exporting = {
