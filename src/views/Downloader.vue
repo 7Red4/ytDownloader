@@ -43,7 +43,7 @@
           ></v-text-field>
 
           <p class="grey--text text-body-2">
-            都不選擇時 預設皆為最高 直播中無法選擇音質
+            直播中的影片無法選擇音質
           </p>
 
           <v-menu max-height="400">
@@ -51,15 +51,16 @@
               <v-text-field
                 v-on="on"
                 :value="vQualityText"
-                @click:clear="vQuality = null"
                 label="選擇畫質"
                 readonly
-                clearable
                 outlined
               ></v-text-field>
             </template>
             <v-list>
               <v-list-item-group v-model="vQuality" label="選擇畫質">
+                <v-list-item value="highestvideo">
+                  最高畫質
+                </v-list-item>
                 <v-list-item
                   v-for="(format, i) in vQualities"
                   :key="i"
@@ -87,15 +88,16 @@
               <v-text-field
                 v-on="on"
                 :value="aQualityText"
-                @click:clear="aQuality = null"
                 label="選擇音質"
                 readonly
-                clearable
                 outlined
               ></v-text-field>
             </template>
             <v-list>
               <v-list-item-group v-model="aQuality" label="選擇音質">
+                <v-list-item value="highestaudio">
+                  最高音質
+                </v-list-item>
                 <v-list-item
                   v-for="(format, i) in aQualities"
                   :key="i"
@@ -180,7 +182,10 @@
 import { ipcRenderer } from 'electron';
 import filenamify from 'filenamify';
 
+import { mapActions, mapGetters } from 'vuex';
+
 import VideoInfoCard from '@/components/VideoInfoCard';
+import Tracker from '@/classes/Tracker';
 
 export default {
   components: {
@@ -198,8 +203,8 @@ export default {
       snack: false,
       snackMsg: '',
       videoInfo: null,
-      vQuality: null,
-      aQuality: null,
+      vQuality: { qualityLabel: '最高畫質', mimeType: 'mp4' },
+      aQuality: { mimeType: '最高音質' },
       isProcessing: false,
       timer: null,
       tracker: {
@@ -213,6 +218,7 @@ export default {
   },
 
   computed: {
+    ...mapGetters(['getQueList', 'getQueById']),
     vQualities() {
       return this.videoInfo
         ? this.videoInfo.formats.filter(({ mimeType }) =>
@@ -271,6 +277,10 @@ export default {
       (event, path) => (this.path = !path.canceled ? path.filePaths[0] : '')
     );
 
+    ipcRenderer.on('set-que-id-reply', (event, tracker) =>
+      this.SET_QUE(tracker)
+    );
+
     ipcRenderer.on('download-processing', (event, tracker) => {
       this.tracker.audio = tracker.audio;
       this.tracker.video = tracker.video;
@@ -289,6 +299,7 @@ export default {
   },
 
   methods: {
+    ...mapActions(['SET_QUE', 'DELETE_QUE']),
     handleFocus(e) {
       navigator.clipboard.readText().then(text => {
         if (this.ytUrl === text) return;
@@ -320,7 +331,7 @@ export default {
     start() {
       if (!this.$refs.form.validate()) return;
       this.isProcessing = true;
-      ipcRenderer.send('download', {
+      ipcRenderer.send('start-que', {
         title: this.title,
         url: this.ytUrl,
         path: this.path,
@@ -330,16 +341,11 @@ export default {
         }
       });
 
-      this.tracker = {
-        start: new Date(),
-        audio: { downloaded: 0, total: Infinity },
-        video: { downloaded: 0, total: Infinity },
-        merged: { frame: 0, speed: '0x', fps: 0 }
-      };
+      this.tracker = new Tracker();
     },
 
     stop() {
-      ipcRenderer.send('exit');
+      ipcRenderer.send('stop-que', this.getQueList[0].id);
     }
   }
 };
