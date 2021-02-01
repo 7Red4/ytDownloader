@@ -299,7 +299,7 @@ export default {
   },
 
   methods: {
-    ...mapActions(['SET_QUE', 'DELETE_QUE']),
+    ...mapActions(['SET_QUE', 'DELETE_QUE', 'SET_SHOW_QUE']),
     handleFocus(e) {
       navigator.clipboard.readText().then(text => {
         if (this.ytUrl === text) return;

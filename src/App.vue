@@ -20,7 +20,8 @@
         </v-btn>
       </template>
     </v-system-bar>
-    <v-app-bar color="primary" class="elevation-0" app>
+
+    <v-app-bar color="primary" class="elevation-0" app clipped-right>
       <v-tabs color="white" centered>
         <v-tab to="/">
           <span class="text-h6 white--text">
@@ -46,7 +47,36 @@
           }}
         </v-icon>
       </v-btn>
+      <v-btn fab small text @click="TOGGLE_SHOW_QUE">
+        <v-icon>mdi-format-list-checkbox</v-icon>
+      </v-btn>
     </v-app-bar>
+
+    <v-navigation-drawer
+      :value="getShowQue"
+      @input="v => SET_SHOW_QUE(v)"
+      class="que_drawer"
+      width="400"
+      clipped
+      right
+      app
+    >
+      <div class="py-13"></div>
+      <QueTracker />
+      <v-divider></v-divider>
+      <QueTracker />
+      <v-divider></v-divider>
+      <QueTracker />
+      <v-divider></v-divider>
+      <QueTracker />
+      <v-divider></v-divider>
+      <QueTracker />
+      <v-divider></v-divider>
+      <QueTracker />
+      <v-divider></v-divider>
+      <QueTracker />
+    </v-navigation-drawer>
+
     <v-main>
       <transition name="route-change-transition">
         <keep-alive>
@@ -60,17 +90,25 @@
 <script>
 import { ipcRenderer } from 'electron';
 
+import { mapActions, mapGetters } from 'vuex';
+
+import QueTracker from '@/components/QueTracker';
+
 export default {
   name: 'App',
+
+  components: { QueTracker },
 
   data() {
     return {
       platform: '',
-      isMaximized: false
+      isMaximized: false,
+      isDrawer: false
     };
   },
 
   computed: {
+    ...mapGetters(['getShowQue', 'getQueList']),
     isMac() {
       return this.platform === 'darwin';
     }
@@ -114,6 +152,7 @@ export default {
   },
 
   methods: {
+    ...mapActions(['TOGGLE_SHOW_QUE', 'SET_SHOW_QUE']),
     handleChangeDark(v) {
       this.$db.set('dark', v).write();
     },
@@ -132,6 +171,10 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.que_drawer {
+  z-index: 2 !important;
+}
+
 .route-change-transition-enter,
 .route-change-transition-leave-to {
   opacity: 0;

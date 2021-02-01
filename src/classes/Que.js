@@ -62,6 +62,7 @@ export default class Que {
 
     if (videoInfo.videoDetails.isLive) {
       this.video = ytdl(url).on('progress', (_, downloaded, total) => {
+        this.tracker.video = { downloaded, total };
         this.event.reply('download-processing', this.tracker);
       });
 

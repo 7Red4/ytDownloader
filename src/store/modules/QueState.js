@@ -1,14 +1,19 @@
 const QueState = {
   state: () => ({
-    queList: []
+    queList: [],
+    showQue: false
   }),
 
   getters: {
     getQueList: state => state.queList,
-    getQueById: state => queId => state.queList.find(({ id }) => id === queId)
+    getQueById: state => queId => state.queList.find(({ id }) => id === queId),
+    getShowQue: state => state.showQue
   },
 
   mutations: {
+    setShowQue(state, show) {
+      state.showQue = show;
+    },
     setQue(state, que) {
       state.queList.push(que);
     },
@@ -21,6 +26,12 @@ const QueState = {
   },
 
   actions: {
+    SET_SHOW_QUE({ commit }, show) {
+      commit('setShowQue', show);
+    },
+    TOGGLE_SHOW_QUE({ state, commit }) {
+      commit('setShowQue', !state.showQue);
+    },
     SET_QUE({ commit }, que) {
       commit('setQue', que);
     },
