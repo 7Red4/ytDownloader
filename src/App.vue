@@ -61,7 +61,16 @@
       right
       app
     >
-      <div class="py-13"></div>
+      <div
+        :style="{
+          height: `${$vuetify.application.top + $vuetify.application.bar}px`
+        }"
+      ></div>
+      <v-card>
+        <v-card-title>
+          下載中的影片
+        </v-card-title>
+      </v-card>
       <QueTracker />
       <v-divider></v-divider>
       <QueTracker />
@@ -93,6 +102,8 @@ import { ipcRenderer } from 'electron';
 import { mapActions, mapGetters } from 'vuex';
 
 import QueTracker from '@/components/QueTracker';
+
+const isDevelopment = process.env.NODE_ENV !== 'production';
 
 export default {
   name: 'App',
@@ -129,6 +140,7 @@ export default {
   },
 
   created() {
+    if (isDevelopment) window.app = this;
     ipcRenderer.send('get-platform');
     ipcRenderer.on('get-platform-reply', (event, platform) => {
       this.platform = platform;
