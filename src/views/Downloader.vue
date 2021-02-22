@@ -118,53 +118,16 @@
           </v-menu>
         </v-form>
 
-        <v-btn color="success" @click="start">
-          {{ isLive ? '錄影' : '下載' }}
-        </v-btn>
+        <v-card-actions>
+          <v-btn color="primary" @click="addQue(true)">
+            加到佇列並開始
+          </v-btn>
+          <v-btn color="secondary" @click="addQue(false)">
+            加到佇列
+          </v-btn>
+        </v-card-actions>
       </template>
     </v-container>
-
-    <v-dialog v-model="isProcessing" persistent max-width="800">
-      <v-card v-if="tracker">
-        <v-card-title>{{ isLive ? '錄製' : '下載' }}中</v-card-title>
-        <v-card-text>
-          開始時間: {{ tracker.start }}
-          <br />
-          <br />
-          <template v-if="!isLive">
-            音訊:
-            <br />
-            <v-progress-linear
-              color="cyan"
-              height="25"
-              :value="(tracker.audio.downloaded / tracker.audio.total) * 100"
-            ></v-progress-linear>
-            <br />
-            視訊:
-            <br />
-            <v-progress-linear
-              color="success"
-              height="25"
-              :value="(tracker.video.downloaded / tracker.video.total) * 100"
-            ></v-progress-linear>
-          </template>
-          <br />
-          <p>
-            已合併:影格 {{ tracker.merged.frame }}, 速度
-            {{ tracker.merged.speed }}, fps {{ tracker.merged.fps }}
-          </p>
-          <v-progress-circular
-            indeterminate
-            color="primary"
-          ></v-progress-circular>
-          <br />
-          時間經過 : {{ $s2hms(seconds) }}
-        </v-card-text>
-        <v-card-actions v-if="isLive">
-          <v-btn color="error" @click="stop" text>中止錄影</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
 
     <v-snackbar v-model="snack" dark @input="v => !v && (snackMsg = '')">
       <div class="d-flex align-center">
@@ -204,16 +167,7 @@ export default {
       snackMsg: '',
       videoInfo: null,
       vQuality: { qualityLabel: '最高畫質', mimeType: 'mp4' },
-      aQuality: { mimeType: '最高音質' },
-      isProcessing: false,
-      timer: null,
-      tracker: {
-        start: new Date(),
-        audio: { downloaded: 0, total: Infinity },
-        video: { downloaded: 0, total: Infinity },
-        merged: { frame: 0, speed: '0x', fps: 0 }
-      },
-      seconds: 0
+      aQuality: { mimeType: '最高音質' }
     };
   },
 
@@ -251,16 +205,6 @@ export default {
     videoInfo(v) {
       v && (this.title = filenamify(v.videoDetails.title));
     },
-    isProcessing(v) {
-      if (v) {
-        this.seconds = 0;
-        this.timer = setInterval(() => {
-          this.seconds++;
-        }, 1000);
-      } else {
-        clearInterval(this.timer);
-      }
-    },
     path(v) {
       this.$db.set('dl_path', v).write();
     }
@@ -280,26 +224,27 @@ export default {
     ipcRenderer.on('set-que-id-reply', (event, tracker) =>
       this.SET_QUE(tracker)
     );
-
-    ipcRenderer.on('download-processing', (event, tracker) => {
-      this.tracker.audio = tracker.audio;
-      this.tracker.video = tracker.video;
-      this.tracker.merged = tracker.merged;
-    });
-
-    ipcRenderer.on('download-complete', () => {
-      this.isProcessing = false;
-    });
-
-    ipcRenderer.on('download-fail', (event, error) => {
-      this.snackMsg = error;
-      this.snack = true;
-      this.isProcessing = false;
-    });
   },
 
   methods: {
     ...mapActions(['SET_QUE', 'DELETE_QUE', 'SET_SHOW_QUE']),
+    resetData() {
+      const originData = {
+        ytUrl: '',
+        path: this.$db.get('dl_path').value() || '',
+        tumbnailPath: '',
+        thumbnailURL: '',
+        title: '',
+        loading: false,
+        videoInfo: null,
+        vQuality: { qualityLabel: '最高畫質', mimeType: 'mp4' },
+        aQuality: { mimeType: '最高音質' }
+      };
+
+      Object.keys(originData).forEach(key => {
+        this[key] = originData[key];
+      });
+    },
     handleFocus(e) {
       navigator.clipboard.readText().then(text => {
         if (this.ytUrl === text) return;
@@ -328,10 +273,9 @@ export default {
       ipcRenderer.send('pick-path');
     },
 
-    start() {
+    addQue(andStart) {
       if (!this.$refs.form.validate()) return;
-      this.isProcessing = true;
-      ipcRenderer.send('start-que', {
+      ipcRenderer.send(andStart ? 'start-que' : 'add-que', {
         title: this.title,
         url: this.ytUrl,
         path: this.path,
@@ -340,8 +284,9 @@ export default {
           video: this.vQuality ? this.vQuality.itag : 'highestvideo'
         }
       });
-
-      this.tracker = new Tracker();
+      this.snackMsg = '已新增至佇列';
+      this.snack = true;
+      this.resetData();
     },
 
     stop() {

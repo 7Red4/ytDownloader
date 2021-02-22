@@ -1,12 +1,12 @@
 const QueState = {
   state: () => ({
-    queList: [],
+    queList: {},
     showQue: false
   }),
 
   getters: {
-    getQueList: state => state.queList,
-    getQueById: state => queId => state.queList.find(({ id }) => id === queId),
+    getQueList: state => Object.values(state.queList),
+    getQueById: state => queId => state.queList[queId],
     getShowQue: state => state.showQue
   },
 
@@ -15,13 +15,10 @@ const QueState = {
       state.showQue = show;
     },
     setQue(state, que) {
-      state.queList.push(que);
+      this._vm.$set(state.queList, que.id, que);
     },
-    deleteQue(state, que) {
-      const targetIdx = queList.findIndex(({ id }) => id === que.id);
-      if (targetIdx > -1) {
-        state.queList.splice(targetIdx, 1);
-      }
+    deleteQue(state, queId) {
+      this._vm.$delete(state.queList, queId);
     }
   },
 
@@ -35,8 +32,8 @@ const QueState = {
     SET_QUE({ commit }, que) {
       commit('setQue', que);
     },
-    DELETE_QUE({ commit }, que) {
-      commit('deleteQue', que);
+    DELETE_QUE({ commit }, queId) {
+      commit('deleteQue', queId);
     }
   }
 };

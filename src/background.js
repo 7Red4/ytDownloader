@@ -116,6 +116,28 @@ ipcMain.on('start-que', async (event, req) => {
   }
 });
 
+ipcMain.on('add-que', async (event, req) => {
+  const que = new Que();
+  try {
+    await que.setBasicInfo({ req, event });
+    queMap.set(que.id, que);
+    event.reply('set-que-id-reply', que.tracker);
+  } catch (error) {
+    event.reply('start-fail', que.id);
+    consola.error(error);
+  }
+});
+
+ipcMain.on('delete-que', async (event, queId) => {
+  try {
+    queMap.delete(queId);
+    event.reply('delete-que-reply', queId);
+  } catch (error) {
+    event.reply('delete-fail', queId);
+    consola.error(error);
+  }
+});
+
 ipcMain.on('start-que-by-id', async (event, queId) => {
   const que = queMap.get(queId);
   try {
@@ -130,7 +152,7 @@ ipcMain.on('start-que-by-id', async (event, queId) => {
 ipcMain.on('start-ques', async (event, req) => {
   try {
     queMap.forEach(que => {
-      que.stopProcess({ event });
+      que.startProcess({ event });
     });
   } catch (error) {
     // event.reply('start-fail', que.id);

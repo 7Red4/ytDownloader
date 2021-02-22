@@ -71,19 +71,10 @@
           下載中的影片
         </v-card-title>
       </v-card>
-      <QueTracker />
-      <v-divider></v-divider>
-      <QueTracker />
-      <v-divider></v-divider>
-      <QueTracker />
-      <v-divider></v-divider>
-      <QueTracker />
-      <v-divider></v-divider>
-      <QueTracker />
-      <v-divider></v-divider>
-      <QueTracker />
-      <v-divider></v-divider>
-      <QueTracker />
+      <div v-for="tracker in getQueList" :key="tracker.id">
+        <QueTracker :tracker="tracker" />
+        <v-divider></v-divider>
+      </div>
     </v-navigation-drawer>
 
     <v-main>
@@ -145,6 +136,25 @@ export default {
     ipcRenderer.on('get-platform-reply', (event, platform) => {
       this.platform = platform;
     });
+
+    // set tracker event listener
+    ipcRenderer.on('download-processing', (event, tracker) => {
+      this.SET_QUE(tracker);
+    });
+
+    ipcRenderer.on('download-complete', (event, tracker) => {
+      this.SET_QUE(tracker);
+    });
+
+    ipcRenderer.on('download-fail', (event, error) => {
+      this.snackMsg = error;
+      this.snack = true;
+      this.isProcessing = false;
+    });
+
+    ipcRenderer.on('delete-que-reply', (event, queId) => {
+      this.DELETE_QUE(queId);
+    });
   },
 
   mounted() {
@@ -164,7 +174,7 @@ export default {
   },
 
   methods: {
-    ...mapActions(['TOGGLE_SHOW_QUE', 'SET_SHOW_QUE']),
+    ...mapActions(['TOGGLE_SHOW_QUE', 'SET_SHOW_QUE', 'SET_QUE', 'DELETE_QUE']),
     handleChangeDark(v) {
       this.$db.set('dark', v).write();
     },

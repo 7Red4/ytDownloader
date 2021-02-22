@@ -2,6 +2,7 @@ export default class Tracker {
   constructor(id) {
     this.id = id || Date.now();
     this.info = null;
+    this.title = '';
 
     this.start = Date.now();
     this.audio = { downloaded: 0, total: Infinity };
@@ -12,7 +13,8 @@ export default class Tracker {
     this.error = false;
   }
 
-  setInfo(videoInfo) {
+  setInfo({ title, videoInfo }) {
+    this.title = title;
     this.info = videoInfo;
   }
 }
