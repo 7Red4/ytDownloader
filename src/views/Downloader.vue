@@ -42,9 +42,7 @@
             outlined
           ></v-text-field>
 
-          <p class="grey--text text-body-2">
-            直播中的影片無法選擇音質
-          </p>
+          <p class="grey--text text-body-2">直播中的影片無法選擇音質</p>
 
           <v-menu max-height="400">
             <template #activator="{ on }">
@@ -58,9 +56,7 @@
             </template>
             <v-list>
               <v-list-item-group v-model="vQuality" label="選擇畫質">
-                <v-list-item value="highestvideo">
-                  最高畫質
-                </v-list-item>
+                <v-list-item value="highestvideo">最高畫質</v-list-item>
                 <v-list-item
                   v-for="(format, i) in vQualities"
                   :key="i"
@@ -95,9 +91,7 @@
             </template>
             <v-list>
               <v-list-item-group v-model="aQuality" label="選擇音質">
-                <v-list-item value="highestaudio">
-                  最高音質
-                </v-list-item>
+                <v-list-item value="highestaudio">最高音質</v-list-item>
                 <v-list-item
                   v-for="(format, i) in aQualities"
                   :key="i"
@@ -119,12 +113,8 @@
         </v-form>
 
         <v-card-actions>
-          <v-btn color="primary" @click="addQue(true)">
-            加到佇列並開始
-          </v-btn>
-          <v-btn color="secondary" @click="addQue(false)">
-            加到佇列
-          </v-btn>
+          <v-btn color="primary" @click="addQue(true)">加到佇列並開始</v-btn>
+          <v-btn color="secondary" @click="addQue(false)">加到佇列</v-btn>
         </v-card-actions>
       </template>
     </v-container>
@@ -150,6 +140,8 @@ import { mapActions, mapGetters } from 'vuex';
 import VideoInfoCard from '@/components/VideoInfoCard';
 import Tracker from '@/classes/Tracker';
 
+const isDevelopment = process.env.NODE_ENV !== 'production';
+
 export default {
   components: {
     VideoInfoCard
@@ -164,6 +156,7 @@ export default {
       title: '',
       loading: false,
       snack: false,
+      isMulti: false,
       snackMsg: '',
       videoInfo: null,
       vQuality: { qualityLabel: '最高畫質', mimeType: 'mp4' },
@@ -226,8 +219,34 @@ export default {
     );
   },
 
+  async mounted() {
+    if (isDevelopment) {
+      const queList = (await import('@/test/testQueList.json')).default;
+      this.addQueByList(queList);
+    }
+  },
+
   methods: {
     ...mapActions(['SET_QUE', 'DELETE_QUE', 'SET_SHOW_QUE']),
+    async addQueByList(queList, andStart = false) {
+      const wait = () => {
+        return new Promise(resolve => setTimeout(resolve, 2));
+      };
+
+      for (const { title, url } of queList) {
+        ipcRenderer.send(andStart ? 'start-que' : 'add-que', {
+          title,
+          url,
+          path: this.path,
+          quality: {
+            audio: 'highestaudio',
+            video: 'highestvideo'
+          }
+        });
+
+        await wait();
+      }
+    },
     resetData() {
       const originData = {
         ytUrl: '',

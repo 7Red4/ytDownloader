@@ -169,6 +169,15 @@ ipcMain.on('stop-que', async (event, queId) => {
   }
 });
 
+ipcMain.on('edit-que', (event, tracker) => {
+  try {
+    queMap.get(tracker.id).updateQue(tracker);
+  } catch (error) {
+    event.reply('stoped-error');
+    consola.error(error);
+  }
+});
+
 ipcMain.on('pick-thumbnail-path', async (event, title) => {
   try {
     const path = dialog.showSaveDialogSync({

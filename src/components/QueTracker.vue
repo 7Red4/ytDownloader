@@ -1,7 +1,23 @@
 <template>
   <v-card>
     <v-card-text>
-      <p class="">{{ tracker.title }}</p>
+      <v-tooltip v-if="!isTitleEditing" bottom>
+        <template #activator="{ on }">
+          <p v-on="on" @dblclick="isTitleEditing = true">
+            {{ titleEditValue }}
+          </p>
+        </template>
+        <span>連點可編輯</span>
+      </v-tooltip>
+      <v-text-field
+        v-else
+        solo
+        dense
+        fill
+        :value="titleEditValue"
+        @blur="updateTitle"
+        @keyup.enter="updateTitle"
+      ></v-text-field>
       <p class="">{{ Date(tracker.start) }}</p>
       <p class="d-flex">
         <span class="text-no-wrap mr-1">
@@ -27,16 +43,30 @@
         已合併: 影格 {{ tracker.merged.frame }}, 速度
         {{ tracker.merged.speed }}, fps {{ tracker.merged.fps }}
       </p>
-      <p>執行狀態: {{ tracker.isRunning ? '執行中' : '閒置' }}</p>
+      <p>
+        執行狀態: {{ tracker.isRunning ? '執行中' : '閒置' }}
+        <v-progress-circular
+          v-if="tracker.isRunning"
+          size="12"
+          width="3"
+          indeterminate
+          color="primary"
+        ></v-progress-circular>
+      </p>
     </v-card-text>
     <v-card-actions class="d-flex justify-end">
-      <v-btn color="error" text @click="deleteQue">
+      <v-btn
+        color="error"
+        text
+        @click="deleteQue"
+        :disabled="tracker.isRunning"
+      >
         從佇列移除
       </v-btn>
-      <v-btn v-if="tracker.isRunning" color="error" small @click="stop">
+      <!-- <v-btn v-if="tracker.isRunning" color="error" small @click="stop">
         終止
-      </v-btn>
-      <v-btn v-if="!tracker.isRunning" color="primary" small @click="start">
+      </v-btn> -->
+      <v-btn :disabled="tracker.isRunning" color="primary" small @click="start">
         下載
       </v-btn>
     </v-card-actions>
@@ -56,11 +86,36 @@ export default {
 
   data() {
     return {
-      Date: Date
+      Date: Date,
+      isTitleEditing: false
     };
   },
 
+  computed: {
+    titleEditValue: {
+      get() {
+        return this.tracker.title;
+      },
+      set(v) {
+        this.editQue({ title: v });
+      }
+    },
+    titlePathValue: {
+      get() {
+        return this.tracker.title;
+      },
+      set(v) {
+        this.editQue({ path: v });
+      }
+    }
+  },
+
   methods: {
+    updateTitle(v) {
+      this.isTitleEditing = false;
+      if (!v.target.value) return;
+      this.titleEditValue = v.target.value;
+    },
     start() {
       ipcRenderer.send('start-que-by-id', this.tracker.id);
     },
@@ -69,6 +124,9 @@ export default {
     },
     deleteQue() {
       ipcRenderer.send('delete-que', this.tracker.id);
+    },
+    editQue({ title, path } = {}) {
+      ipcRenderer.send('edit-que', { id: this.tracker.id, title, path });
     }
   }
 };

@@ -3,6 +3,7 @@ export default class Tracker {
     this.id = id || Date.now();
     this.info = null;
     this.title = '';
+    this.path = '';
 
     this.start = Date.now();
     this.audio = { downloaded: 0, total: Infinity };
@@ -13,8 +14,9 @@ export default class Tracker {
     this.error = false;
   }
 
-  setInfo({ title, videoInfo }) {
-    this.title = title;
-    this.info = videoInfo;
+  setInfo({ title, videoInfo, path }) {
+    !!title && (this.title = title);
+    !!videoInfo && (this.info = videoInfo);
+    !!path && (this.path = path);
   }
 }

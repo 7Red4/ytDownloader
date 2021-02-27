@@ -40,6 +40,7 @@ export default class Que {
     this.req = req || null;
 
     this.tracker = new Tracker(id);
+    this.proccesser = null;
   }
 
   setReq(req) {
@@ -48,6 +49,15 @@ export default class Que {
 
   setEvent(event) {
     this.event = event;
+  }
+
+  updateQue(tracker) {
+    const title = filenamify(tracker.title);
+    this.tracker.setInfo(tracker);
+    !!title && (this.title = title);
+    !!tracker.path && (this.path = tracker.path);
+    this.output = PATH.join(this.path, this.title);
+    this.event.reply('download-processing', this.tracker);
   }
 
   async setBasicInfo({ req = this.req, event }) {
@@ -60,7 +70,7 @@ export default class Que {
 
     this.info = await getInfo(url);
 
-    this.tracker.setInfo({ title, videoInfo: this.info });
+    this.tracker.setInfo({ title, videoInfo: this.info, path });
   }
 
   fileCheckAndRename(filePath, count = 1) {
@@ -103,7 +113,7 @@ export default class Que {
       });
 
       try {
-        const ffmpegProcess = this.ffmpegProcess([
+        this.proccesser = this.ffmpegProcess([
           'pipe:3',
           '-i',
           'pipe:4',
@@ -118,8 +128,8 @@ export default class Que {
           `${this.output}.${this.format}`
         ]);
 
-        this.audio.pipe(ffmpegProcess.stdio[4]);
-        this.video.pipe(ffmpegProcess.stdio[5]);
+        this.audio.pipe(this.proccesser.stdio[4]);
+        this.video.pipe(this.proccesser.stdio[5]);
       } catch (error) {
         consola.error(error);
         this.event.reply('download-fail', error);
@@ -128,17 +138,21 @@ export default class Que {
   }
 
   stopProcess() {
-    this.ffmpegProcess.kill('SIGINT');
-    if (this.video) this.video.destroy();
-    if (this.audio) this.audio.destroy();
-    if (this.info.videoDetails.isLive) {
-      this.convert();
+    try {
+      if (this.video) this.video.destroy();
+      if (this.audio) this.audio.destroy();
+      // this.proccesser.kill();
+      if (this.info.videoDetails.isLive) {
+        this.convert();
+      }
+    } catch (error) {
+      console.error(error);
     }
   }
 
   convert() {
     try {
-      const ffmpegProcess = this.ffmpegProcess([
+      this.proccesser = this.ffmpegProcess([
         'pipe:3',
         '-i',
         PATH.join(this.path, `pending_${this.id}.ts`),
@@ -149,7 +163,7 @@ export default class Que {
         `${this.output}.${this.format}`
       ]);
 
-      ffmpegProcess.on('close', () => {
+      this.proccesser.on('close', () => {
         const pendingFile = PATH.join(this.path, `pending_${this.id}.ts`);
         try {
           fs.unlinkSync(pendingFile);
