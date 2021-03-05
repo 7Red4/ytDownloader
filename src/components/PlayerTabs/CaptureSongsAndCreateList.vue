@@ -95,6 +95,7 @@
               v-model="tag"
               label="標題"
               :rules="[v => !!v || '填點什麼吧']"
+              @focus="e => e.target.select()"
               lazy-validation
             ></v-text-field>
           </v-col>
@@ -272,6 +273,8 @@ export default {
       if (v) {
         this.ytUrl = `https://www.youtube.com/watch?v=${v}`;
         this.PlaySource = this.getSourceById(v) || PlaySource;
+        this.end = this.$s2hms(this.PlaySource.lengthSeconds);
+        this.tag = this.PlaySource.title;
       }
     }
   },
@@ -442,6 +445,7 @@ export default {
         this.PlaySource.onBlobReady(() => {
           this.PlaySource.setSrc(URL.createObjectURL(this.PlaySource.audio));
           this.end = this.$s2hms(this.PlaySource.lengthSeconds);
+          this.tag = this.PlaySource.title;
           this.SET_PLAY_SOURCE(this.PlaySource);
 
           this.loading = false;
