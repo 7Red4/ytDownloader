@@ -42,24 +42,39 @@
             outlined
           ></v-text-field>
 
-          <p class="grey--text text-body-2">
-            都不選擇時 預設皆為最高 直播中無法選擇音質
-          </p>
+          <p class="grey--text text-body-2 my-1">直播中的影片無法選擇音質</p>
+
+          <div class="d-flex flex-wrap mb-3">
+            <v-checkbox
+              label="下載視訊"
+              :value="!sourceReq.noVideo"
+              :input-value="!sourceReq.noVideo"
+              :disabled="!sourceReq.noVideo && sourceReq.noAudio"
+              @change="v => (sourceReq.noVideo = !v)"
+            ></v-checkbox>
+            <div class="px-3"></div>
+            <v-checkbox
+              label="下載音訊"
+              :value="!sourceReq.noAudio"
+              :input-value="!sourceReq.noAudio"
+              :disabled="!sourceReq.noAudio && sourceReq.noVideo"
+              @change="v => (sourceReq.noAudio = !v)"
+            ></v-checkbox>
+          </div>
 
           <v-menu max-height="400">
             <template #activator="{ on }">
               <v-text-field
                 v-on="on"
                 :value="vQualityText"
-                @click:clear="vQuality = null"
                 label="選擇畫質"
                 readonly
-                clearable
                 outlined
               ></v-text-field>
             </template>
             <v-list>
               <v-list-item-group v-model="vQuality" label="選擇畫質">
+                <v-list-item value="highestvideo">最高畫質</v-list-item>
                 <v-list-item
                   v-for="(format, i) in vQualities"
                   :key="i"
@@ -87,15 +102,14 @@
               <v-text-field
                 v-on="on"
                 :value="aQualityText"
-                @click:clear="aQuality = null"
                 label="選擇音質"
                 readonly
-                clearable
                 outlined
               ></v-text-field>
             </template>
             <v-list>
               <v-list-item-group v-model="aQuality" label="選擇音質">
+                <v-list-item value="highestaudio">最高音質</v-list-item>
                 <v-list-item
                   v-for="(format, i) in aQualities"
                   :key="i"
@@ -116,53 +130,12 @@
           </v-menu>
         </v-form>
 
-        <v-btn color="success" @click="start">
-          {{ isLive ? '錄影' : '下載' }}
-        </v-btn>
+        <v-card-actions>
+          <v-btn color="primary" @click="addQue(true)">加到佇列並開始</v-btn>
+          <v-btn color="secondary" @click="addQue(false)">加到佇列</v-btn>
+        </v-card-actions>
       </template>
     </v-container>
-
-    <v-dialog v-model="isProcessing" persistent max-width="800">
-      <v-card v-if="tracker">
-        <v-card-title>{{ isLive ? '錄製' : '下載' }}中</v-card-title>
-        <v-card-text>
-          開始時間: {{ tracker.start }}
-          <br />
-          <br />
-          <template v-if="!isLive">
-            音訊:
-            <br />
-            <v-progress-linear
-              color="cyan"
-              height="25"
-              :value="(tracker.audio.downloaded / tracker.audio.total) * 100"
-            ></v-progress-linear>
-            <br />
-            視訊:
-            <br />
-            <v-progress-linear
-              color="success"
-              height="25"
-              :value="(tracker.video.downloaded / tracker.video.total) * 100"
-            ></v-progress-linear>
-          </template>
-          <br />
-          <p>
-            已合併:影格 {{ tracker.merged.frame }}, 速度
-            {{ tracker.merged.speed }}, fps {{ tracker.merged.fps }}
-          </p>
-          <v-progress-circular
-            indeterminate
-            color="primary"
-          ></v-progress-circular>
-          <br />
-          時間經過 : {{ $s2hms(seconds) }}
-        </v-card-text>
-        <v-card-actions v-if="isLive">
-          <v-btn color="error" @click="stop" text>中止錄影</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
 
     <v-snackbar v-model="snack" dark @input="v => !v && (snackMsg = '')">
       <div class="d-flex align-center">
@@ -180,7 +153,11 @@
 import { ipcRenderer } from 'electron';
 import filenamify from 'filenamify';
 
+import { mapActions, mapGetters } from 'vuex';
+
 import VideoInfoCard from '@/components/VideoInfoCard';
+
+const isDevelopment = process.env.NODE_ENV !== 'production';
 
 export default {
   components: {
@@ -196,23 +173,20 @@ export default {
       title: '',
       loading: false,
       snack: false,
+      isMulti: false,
       snackMsg: '',
       videoInfo: null,
-      vQuality: null,
-      aQuality: null,
-      isProcessing: false,
-      timer: null,
-      tracker: {
-        start: new Date(),
-        audio: { downloaded: 0, total: Infinity },
-        video: { downloaded: 0, total: Infinity },
-        merged: { frame: 0, speed: '0x', fps: 0 }
-      },
-      seconds: 0
+      vQuality: { qualityLabel: '最高畫質', mimeType: 'mp4' },
+      aQuality: { mimeType: '最高音質' },
+      sourceReq: {
+        noVideo: false,
+        noAudio: false
+      }
     };
   },
 
   computed: {
+    ...mapGetters(['getQueList', 'getQueById']),
     vQualities() {
       return this.videoInfo
         ? this.videoInfo.formats.filter(({ mimeType }) =>
@@ -245,16 +219,6 @@ export default {
     videoInfo(v) {
       v && (this.title = filenamify(v.videoDetails.title));
     },
-    isProcessing(v) {
-      if (v) {
-        this.seconds = 0;
-        this.timer = setInterval(() => {
-          this.seconds++;
-        }, 1000);
-      } else {
-        clearInterval(this.timer);
-      }
-    },
     path(v) {
       this.$db.set('dl_path', v).write();
     }
@@ -271,24 +235,60 @@ export default {
       (event, path) => (this.path = !path.canceled ? path.filePaths[0] : '')
     );
 
-    ipcRenderer.on('download-processing', (event, tracker) => {
-      this.tracker.audio = tracker.audio;
-      this.tracker.video = tracker.video;
-      this.tracker.merged = tracker.merged;
-    });
+    ipcRenderer.on('set-que-id-reply', (event, tracker) =>
+      this.SET_QUE(tracker)
+    );
+  },
 
-    ipcRenderer.on('download-complete', () => {
-      this.isProcessing = false;
-    });
-
-    ipcRenderer.on('download-fail', (event, error) => {
-      this.snackMsg = error;
-      this.snack = true;
-      this.isProcessing = false;
-    });
+  async mounted() {
+    if (isDevelopment) {
+      const queList = (await import('@/test/testQueList.json')).default;
+      this.addQueByList(queList);
+    }
   },
 
   methods: {
+    ...mapActions(['SET_QUE', 'DELETE_QUE', 'SET_SHOW_QUE']),
+    async addQueByList(queList, andStart = false) {
+      const wait = () => {
+        return new Promise(resolve => setTimeout(resolve, 2));
+      };
+
+      for (const { title, url } of queList) {
+        ipcRenderer.send(andStart ? 'start-que' : 'add-que', {
+          title,
+          url,
+          path: this.path,
+          quality: {
+            audio: 'highestaudio',
+            video: 'highestvideo'
+          }
+        });
+
+        await wait();
+      }
+    },
+    resetData() {
+      const originData = {
+        ytUrl: '',
+        path: this.$db.get('dl_path').value() || '',
+        tumbnailPath: '',
+        thumbnailURL: '',
+        title: '',
+        loading: false,
+        videoInfo: null,
+        vQuality: { qualityLabel: '最高畫質', mimeType: 'mp4' },
+        aQuality: { mimeType: '最高音質' },
+        sourceReq: {
+          noVideo: false,
+          noAudio: false
+        }
+      };
+
+      Object.keys(originData).forEach(key => {
+        this[key] = originData[key];
+      });
+    },
     handleFocus(e) {
       navigator.clipboard.readText().then(text => {
         if (this.ytUrl === text) return;
@@ -317,29 +317,25 @@ export default {
       ipcRenderer.send('pick-path');
     },
 
-    start() {
+    addQue(andStart) {
       if (!this.$refs.form.validate()) return;
-      this.isProcessing = true;
-      ipcRenderer.send('download', {
+      ipcRenderer.send(andStart ? 'start-que' : 'add-que', {
         title: this.title,
         url: this.ytUrl,
         path: this.path,
         quality: {
           audio: this.aQuality ? this.aQuality.itag : 'highestaudio',
           video: this.vQuality ? this.vQuality.itag : 'highestvideo'
-        }
+        },
+        sourceReq: this.sourceReq
       });
-
-      this.tracker = {
-        start: new Date(),
-        audio: { downloaded: 0, total: Infinity },
-        video: { downloaded: 0, total: Infinity },
-        merged: { frame: 0, speed: '0x', fps: 0 }
-      };
+      this.snackMsg = '已新增至佇列';
+      this.snack = true;
+      this.resetData();
     },
 
     stop() {
-      ipcRenderer.send('exit');
+      ipcRenderer.send('stop-que', this.getQueList[0].id);
     }
   }
 };

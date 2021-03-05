@@ -2,13 +2,21 @@
   <v-card class="fill-height">
     <v-expansion-panels>
       <v-expansion-panel>
-        <v-expansion-panel-header>從檔案匯入歌單</v-expansion-panel-header>
+        <v-expansion-panel-header>
+          從檔案匯入歌曲 / 歌單
+        </v-expansion-panel-header>
         <v-expansion-panel-content>
           <v-file-input
-            v-model="uploadFile"
+            v-model="uploadSouceFile"
+            label="從檔案匯入歌曲"
+            @change="handleSourceFile"
+            :error-messages="isSourceFileError ? '檔案有誤' : null"
+          ></v-file-input>
+          <v-file-input
+            v-model="uploadPlayListFile"
             label="從檔案匯入歌單"
-            @change="handleFile"
-            :error-messages="isFileError ? '檔案有誤' : null"
+            @change="handlePlayListFile"
+            :error-messages="isPlayListFileError ? '檔案有誤' : null"
           ></v-file-input>
         </v-expansion-panel-content>
       </v-expansion-panel>
@@ -87,6 +95,7 @@
               v-model="tag"
               label="標題"
               :rules="[v => !!v || '填點什麼吧']"
+              @focus="e => e.target.select()"
               lazy-validation
             ></v-text-field>
           </v-col>
@@ -239,8 +248,10 @@ export default {
       startError: null,
       endError: null,
 
-      isFileError: false,
-      uploadFile: null
+      isSourceFileError: false,
+      isPlayListFileError: false,
+      uploadSouceFile: null,
+      uploadPlayListFile: null
     };
   },
 
@@ -262,6 +273,8 @@ export default {
       if (v) {
         this.ytUrl = `https://www.youtube.com/watch?v=${v}`;
         this.PlaySource = this.getSourceById(v) || PlaySource;
+        this.end = this.$s2hms(this.PlaySource.lengthSeconds);
+        this.tag = this.PlaySource.title;
       }
     }
   },
@@ -276,8 +289,30 @@ export default {
       'SET_PLAY_LIST',
       'ADD_SONG_TO_LIST'
     ]),
-    handleFile(file) {
-      this.isFileError = false;
+    handleSourceFile(file) {
+      this.isSourceFileError = false;
+      if (!file) return;
+      this.isLoadingFile = true;
+
+      const fr = new FileReader();
+
+      const data = fr.readAsText(file);
+      fr.onload = () => {
+        try {
+          const sources = JSON.parse(fr.result);
+          this.importSource(sources);
+          this.$emit('to-captured');
+        } catch (error) {
+          this.isSourceFileError = true;
+          console.error(error);
+        } finally {
+          this.isLoadingFile = false;
+          this.uploadSouceFile = null;
+        }
+      };
+    },
+    handlePlayListFile(file) {
+      this.isPlayListFileError = false;
       if (!file) return;
       this.isLoadingFile = true;
 
@@ -287,22 +322,23 @@ export default {
       fr.onload = () => {
         try {
           const playlist = JSON.parse(fr.result);
-          this.importPlaylist(playlist);
+          this.importPlayList(playlist);
           this.$emit('to-captured');
         } catch (error) {
-          this.isFileError = true;
+          this.isPlayListFileError = true;
           console.error(error);
         } finally {
           this.isLoadingFile = false;
-          this.uploadFile = null;
+          this.uploadPlayListFile = null;
         }
       };
     },
-    async importPlaylist(playlist) {
+    async importSource(sources, playlistId) {
       const wait = () => {
         return new Promise(resolve => setTimeout(resolve, 2));
       };
-      for (const { ytUrl, songs } of playlist) {
+
+      for (const { ytUrl, songs } of sources) {
         const ytId = this.$pyt(ytUrl);
         const existedSource = this.getSourceById(ytId);
         if (!ytId) throw new Error('invalid url');
@@ -310,7 +346,7 @@ export default {
         const Source = existedSource || new PlaySource({ url: ytUrl });
         if (!existedSource) this.SET_PLAY_SOURCE(Source);
         Source.onBlobReady(async () => {
-          if (!existedSource) Source.setSrc(URL.createObjectURL(Source.audio));
+          if (!Source.src) Source.setSrc(URL.createObjectURL(Source.audio));
           for (const song of songs) {
             let flag = true;
             const start = this.$hms2s(song.start);
@@ -324,23 +360,55 @@ export default {
             }
 
             if (flag) {
-              this.SET_SONG(
-                new Song({
-                  src: Source.src,
-                  ytId: Source.id,
-                  title: Source.title,
-                  author: Source.author,
-                  start,
-                  end,
-                  length: end - start,
-                  tag: song.tag || '未命名'
-                })
-              );
+              const newSong = new Song({
+                src: Source.src,
+                ytId: Source.id,
+                title: Source.title,
+                author: Source.author,
+                start,
+                end,
+                length: end - start,
+                tag: song.tag || '未命名'
+              });
+              this.SET_SONG(newSong);
+              if (playlistId) {
+                this.ADD_SONG_TO_LIST({
+                  listId: playlistId,
+                  songId: newSong.id
+                });
+              }
             }
             await wait();
           }
         });
       }
+    },
+    async importPlayList(playList) {
+      const playlistId = Date.now();
+
+      const { title, songs } = playList;
+
+      this.SET_PLAY_LIST({
+        id: playlistId,
+        title,
+        songs: []
+      });
+
+      // parse to source list
+      const sourceList = [];
+      const groupByYtId = {};
+
+      songs.forEach(song => {
+        !groupByYtId[song.ytId] && (groupByYtId[song.ytId] = []);
+        groupByYtId[song.ytId].push(song);
+      });
+
+      for (const ytId in groupByYtId) {
+        const ytUrl = `https://youtube.com/watch?v=${ytId}`;
+        sourceList.push({ ytUrl, songs: groupByYtId[ytId] });
+      }
+
+      await this.importSource(sourceList, playlistId);
     },
     handleFocus(e) {
       navigator.clipboard.readText().then(text => {
@@ -377,6 +445,7 @@ export default {
         this.PlaySource.onBlobReady(() => {
           this.PlaySource.setSrc(URL.createObjectURL(this.PlaySource.audio));
           this.end = this.$s2hms(this.PlaySource.lengthSeconds);
+          this.tag = this.PlaySource.title;
           this.SET_PLAY_SOURCE(this.PlaySource);
 
           this.loading = false;

@@ -6,11 +6,11 @@
 
 可以下載 youtube 影片的跨平台桌面應用程式
 
-ver 2.0.1
+ver 2.1.0
 
-[windows 載點](/release/2.0.1/win/yt-downloader%20Setup.exe?raw=true)
+[windows 載點](/release/2.1.0/win/yt-downloader%20Setup.exe?raw=true)
 
-[mac 載點](/release/2.0.1/mac/yt-downloader.dmg?raw=true)
+[mac 載點](/release/2.1.0/mac/yt-downloader.dmg?raw=true)
 
 ## 使用方法
 
@@ -27,17 +27,18 @@ ver 2.0.1
 ## 功能
 
 ### Downloader
+
 - [x] 下載 youtube 影片
 - [x] 選擇畫質與音質
 - [x] 開/關燈模式
 - [x] 直播中也可下載
 - [x] 下載首圖
-
-- [ ] 只下載 音/視訊
-- [ ] 大量下載
+- [x] 只下載 音/視訊
+- [x] 大量下載
 
 ### Player
+
 - [x] 透過時間標籤製作歌單
 - [x] 透過當按匯入歌單
-- [ ] 儲存歌單
+- [x] 儲存/輸出 歌單
 - [ ] 分享歌單

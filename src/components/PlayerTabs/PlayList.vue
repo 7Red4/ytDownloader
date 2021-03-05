@@ -39,6 +39,16 @@
                       刪除
                     </v-list-item-content>
                   </v-list-item>
+                  <v-list-item @click="pickPlalistExport(playList)">
+                    <v-list-item-icon>
+                      <v-icon color="primary">
+                        mdi-export
+                      </v-icon>
+                    </v-list-item-icon>
+                    <v-list-item-content>
+                      輸出此歌單
+                    </v-list-item-content>
+                  </v-list-item>
                 </v-list>
               </v-menu>
             </v-list-item>
@@ -128,10 +138,25 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <v-dialog
+      v-model="isExporting"
+      max-width="500px"
+      transition="dialog-transition"
+      persistent
+    >
+      <v-card>
+        <v-card-text>
+          <v-progress-linear indeterminate color="primary"></v-progress-linear>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
   </v-card>
 </template>
 
 <script>
+import { ipcRenderer } from 'electron';
+
 import { mapGetters, mapActions } from 'vuex';
 
 export default {
@@ -141,7 +166,10 @@ export default {
       listDialog: false,
       playListTitle: '',
       pickingList: [],
-      pickedSongIds: []
+      pickedSongIds: [],
+      exportListPending: null,
+
+      isExporting: false
     };
   },
 
@@ -165,6 +193,15 @@ export default {
         this.$refs.playListTitleEl.blur();
       }
     }
+  },
+
+  mounted() {
+    ipcRenderer.on('pick-playlist-export-path-reply', (event, res) =>
+      this.exportThis(res)
+    );
+    ipcRenderer.on('export-done', () => {
+      this.isExporting = false;
+    });
   },
 
   methods: {
@@ -220,6 +257,30 @@ export default {
       });
 
       this.reset();
+    },
+
+    // menu method
+    exportThis(path) {
+      this.isExporting = true;
+
+      const exporting = {
+        title: this.exportListPending.title,
+        songs: this.exportListPending.songs.map(id => {
+          const { ytId, start, end, tag } = this.getSongById(id);
+          return {
+            ytId,
+            tag,
+            start,
+            end
+          };
+        })
+      };
+
+      ipcRenderer.send('export-list', { path, exporting });
+    },
+    pickPlalistExport(playList) {
+      this.exportListPending = playList;
+      ipcRenderer.send('pick-playlist-export-path', playList.title);
     }
   }
 };

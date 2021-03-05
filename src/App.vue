@@ -20,7 +20,8 @@
         </v-btn>
       </template>
     </v-system-bar>
-    <v-app-bar color="primary" class="elevation-0" app>
+
+    <v-app-bar color="primary" class="elevation-0" app clipped-right>
       <v-tabs color="white" centered>
         <v-tab to="/">
           <span class="text-h6 white--text">
@@ -46,7 +47,46 @@
           }}
         </v-icon>
       </v-btn>
+      <v-btn fab small text @click="TOGGLE_SHOW_QUE">
+        <v-icon>mdi-format-list-checkbox</v-icon>
+      </v-btn>
     </v-app-bar>
+
+    <v-navigation-drawer
+      :value="getShowQue"
+      @input="v => SET_SHOW_QUE(v)"
+      class="que_drawer"
+      width="400"
+      clipped
+      right
+      app
+    >
+      <v-card
+        :style="{
+          position: 'absolute',
+          top: `${$vuetify.application.top + $vuetify.application.bar}px`,
+          width: '100%',
+          zIndex: 1
+        }"
+      >
+        <v-card-title>
+          下載中的影片
+          <v-spacer></v-spacer>
+          <v-btn text @click="startAll">全部開始</v-btn>
+        </v-card-title>
+      </v-card>
+      <div
+        :style="{
+          height: `${$vuetify.application.top + $vuetify.application.bar}px`
+        }"
+      ></div>
+      <div class="py-8"></div>
+      <div v-for="tracker in getQueList" :key="tracker.id">
+        <QueTracker :tracker="tracker" />
+        <v-divider></v-divider>
+      </div>
+    </v-navigation-drawer>
+
     <v-main>
       <transition name="route-change-transition">
         <keep-alive>
@@ -60,17 +100,27 @@
 <script>
 import { ipcRenderer } from 'electron';
 
+import { mapActions, mapGetters } from 'vuex';
+
+import QueTracker from '@/components/QueTracker';
+
+const isDevelopment = process.env.NODE_ENV !== 'production';
+
 export default {
   name: 'App',
+
+  components: { QueTracker },
 
   data() {
     return {
       platform: '',
-      isMaximized: false
+      isMaximized: false,
+      isDrawer: false
     };
   },
 
   computed: {
+    ...mapGetters(['getShowQue', 'getQueList']),
     isMac() {
       return this.platform === 'darwin';
     }
@@ -91,9 +141,29 @@ export default {
   },
 
   created() {
+    if (isDevelopment) window.app = this;
     ipcRenderer.send('get-platform');
     ipcRenderer.on('get-platform-reply', (event, platform) => {
       this.platform = platform;
+    });
+
+    // set tracker event listener
+    ipcRenderer.on('download-processing', (event, tracker) => {
+      this.SET_QUE(tracker);
+    });
+
+    ipcRenderer.on('download-complete', (event, tracker) => {
+      this.SET_QUE(tracker);
+    });
+
+    ipcRenderer.on('download-fail', (event, error) => {
+      this.snackMsg = error;
+      this.snack = true;
+      this.isProcessing = false;
+    });
+
+    ipcRenderer.on('delete-que-reply', (event, queId) => {
+      this.DELETE_QUE(queId);
     });
   },
 
@@ -114,6 +184,7 @@ export default {
   },
 
   methods: {
+    ...mapActions(['TOGGLE_SHOW_QUE', 'SET_SHOW_QUE', 'SET_QUE', 'DELETE_QUE']),
     handleChangeDark(v) {
       this.$db.set('dark', v).write();
     },
@@ -126,12 +197,20 @@ export default {
     },
     closeWindow() {
       ipcRenderer.send('close-window');
+    },
+
+    startAll() {
+      ipcRenderer.send('start-ques');
     }
   }
 };
 </script>
 
 <style lang="scss" scoped>
+.que_drawer {
+  z-index: 2 !important;
+}
+
 .route-change-transition-enter,
 .route-change-transition-leave-to {
   opacity: 0;

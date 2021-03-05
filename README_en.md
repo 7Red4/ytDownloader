@@ -6,11 +6,11 @@
 
 A cross-platform desktop app for downloading youtube videos
 
-ver 2.0.1
+ver 2.1.0
 
-[windows download](/release/2.0.1/win/yt-downloader%20Setup.exe?raw=true)
+[windows download](/release/2.1.0/win/yt-downloader%20Setup.exe?raw=true)
 
-[mac download](/release/2.0.1/mac/yt-downloader.dmg?raw=true)
+[mac download](/release/2.1.0/mac/yt-downloader.dmg?raw=true)
 
 ## USAGE
 
@@ -31,12 +31,12 @@ ver 2.0.1
 - [x] Light / dark mode
 - [x] Download while it's even in streaming
 - [x] Download thumbnail
-
-- [ ] Download video/audio only
-- [ ] Multiple download
+- [x] Download video/audio only
+- [x] Multiple download
 
 ### Player
-- [x] create playlist by timestamps
+
+- [x] create playlist by time
 - [x] create playlist by json file
-- [ ] save playlist
+- [x] save/export playlist
 - [ ] share playlist
