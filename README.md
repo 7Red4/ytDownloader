@@ -8,9 +8,9 @@
 
 ver 2.1.0
 
-[windows 載點](/release/2.1.0/win/yt-downloader%20Setup.exe?raw=true)
+[windows 載點](/release/2.1.0/yt-downloader%20Setup.exe?raw=true)
 
-[mac 載點](/release/2.1.0/mac/yt-downloader.dmg?raw=true)
+[mac 載點](/release/2.1.0/yt-downloader.dmg?raw=true)
 
 ## 使用方法
 
