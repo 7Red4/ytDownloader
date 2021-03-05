@@ -42,7 +42,25 @@
             outlined
           ></v-text-field>
 
-          <p class="grey--text text-body-2">直播中的影片無法選擇音質</p>
+          <p class="grey--text text-body-2 my-1">直播中的影片無法選擇音質</p>
+
+          <div class="d-flex flex-wrap mb-3">
+            <v-checkbox
+              label="下載視訊"
+              :value="!sourceReq.noVideo"
+              :input-value="!sourceReq.noVideo"
+              :disabled="!sourceReq.noVideo && sourceReq.noAudio"
+              @change="v => (sourceReq.noVideo = !v)"
+            ></v-checkbox>
+            <div class="px-3"></div>
+            <v-checkbox
+              label="下載音訊"
+              :value="!sourceReq.noAudio"
+              :input-value="!sourceReq.noAudio"
+              :disabled="!sourceReq.noAudio && sourceReq.noVideo"
+              @change="v => (sourceReq.noAudio = !v)"
+            ></v-checkbox>
+          </div>
 
           <v-menu max-height="400">
             <template #activator="{ on }">
@@ -138,7 +156,6 @@ import filenamify from 'filenamify';
 import { mapActions, mapGetters } from 'vuex';
 
 import VideoInfoCard from '@/components/VideoInfoCard';
-import Tracker from '@/classes/Tracker';
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
@@ -160,7 +177,11 @@ export default {
       snackMsg: '',
       videoInfo: null,
       vQuality: { qualityLabel: '最高畫質', mimeType: 'mp4' },
-      aQuality: { mimeType: '最高音質' }
+      aQuality: { mimeType: '最高音質' },
+      sourceReq: {
+        noVideo: false,
+        noAudio: false
+      }
     };
   },
 
@@ -257,7 +278,11 @@ export default {
         loading: false,
         videoInfo: null,
         vQuality: { qualityLabel: '最高畫質', mimeType: 'mp4' },
-        aQuality: { mimeType: '最高音質' }
+        aQuality: { mimeType: '最高音質' },
+        sourceReq: {
+          noVideo: false,
+          noAudio: false
+        }
       };
 
       Object.keys(originData).forEach(key => {
@@ -301,7 +326,8 @@ export default {
         quality: {
           audio: this.aQuality ? this.aQuality.itag : 'highestaudio',
           video: this.vQuality ? this.vQuality.itag : 'highestvideo'
-        }
+        },
+        sourceReq: this.sourceReq
       });
       this.snackMsg = '已新增至佇列';
       this.snack = true;

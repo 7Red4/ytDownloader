@@ -1,25 +1,27 @@
 <template>
   <v-card>
     <v-card-text>
-      <v-tooltip v-if="!isTitleEditing" bottom>
+      <v-tooltip v-if="!isTitleEditing" left>
         <template #activator="{ on }">
-          <p v-on="on" @dblclick="isTitleEditing = true">
+          <p v-on="on" @dblclick="isTitleEditing = true" class="primary--text">
             {{ titleEditValue }}
           </p>
         </template>
-        <span>連點可編輯</span>
+        <span>連點標題可編輯</span>
       </v-tooltip>
       <v-text-field
         v-else
         solo
         dense
         fill
+        ref="TitleEdit"
         :value="titleEditValue"
         @blur="updateTitle"
         @keyup.enter="updateTitle"
+        @focus="e => e.target.select()"
       ></v-text-field>
-      <p class="">{{ Date(tracker.start) }}</p>
-      <p class="d-flex">
+      <p class="text-caption">{{ Date(tracker.start) }}</p>
+      <p class="d-flex" v-if="!tracker.noAudio">
         <span class="text-no-wrap mr-1">
           音訊:
         </span>
@@ -29,7 +31,7 @@
           :value="(tracker.audio.downloaded / tracker.audio.total) * 100"
         ></v-progress-linear>
       </p>
-      <p class="d-flex">
+      <p class="d-flex" v-if="!tracker.noVideo">
         <span class="text-no-wrap mr-1">
           視訊:
         </span>
@@ -39,7 +41,7 @@
           :value="(tracker.video.downloaded / tracker.video.total) * 100"
         ></v-progress-linear>
       </p>
-      <p class="">
+      <p v-if="!tracker.noVideo && !tracker.noAudio">
         已合併: 影格 {{ tracker.merged.frame }}, 速度
         {{ tracker.merged.speed }}, fps {{ tracker.merged.fps }}
       </p>
@@ -106,6 +108,17 @@ export default {
       },
       set(v) {
         this.editQue({ path: v });
+      }
+    }
+  },
+
+  watch: {
+    isTitleEditing(v) {
+      if (v) {
+        this.$nextTick(() => {
+          const target = this.$refs.TitleEdit;
+          target.focus();
+        });
       }
     }
   },

@@ -41,6 +41,8 @@ export default class Que {
 
     this.tracker = new Tracker(id);
     this.proccesser = null;
+    this.noVideo = false;
+    this.noAudio = false;
   }
 
   setReq(req) {
@@ -64,7 +66,13 @@ export default class Que {
     this.tracker = new Tracker(this.id);
     this.setReq(req);
     this.setEvent(event);
-    const { url, title, path } = req;
+    const { url, title, path, sourceReq } = req;
+    const { noVideo, noAudio } = sourceReq || {};
+    this.noVideo = noVideo;
+    this.noAudio = noAudio;
+    this.tracker.noVideo = noVideo;
+    this.tracker.noAudio = noAudio;
+
     this.path = path;
     this.output = PATH.join(this.path, `${filenamify(title)}`);
 
@@ -100,39 +108,67 @@ export default class Que {
         fs.createWriteStream(PATH.join(this.path, `pending_${this.id}.ts`))
       );
     } else {
-      this.audio = ytdl(url, {
-        quality: quality.audio
-      }).on('progress', (_, downloaded, total) => {
-        this.tracker.audio = { downloaded, total };
-      });
+      if (this.noAudio) {
+        this.video = ytdl(url, {
+          quality: quality.video,
+          filter: 'videoonly'
+        }).on('progress', (_, downloaded, total) => {
+          this.tracker.video = { downloaded, total };
+          if (downloaded === total) {
+            this.stopSlowEmit();
+          }
+        });
 
-      this.video = ytdl(url, {
-        quality: quality.video
-      }).on('progress', (_, downloaded, total) => {
-        this.tracker.video = { downloaded, total };
-      });
+        this.video.pipe(fs.createWriteStream(`${this.output}.mp4`));
+        this.slowEmit();
+      } else if (this.noVideo) {
+        this.audio = ytdl(url, {
+          quality: quality.audio,
+          filter: 'audioonly'
+        }).on('progress', (_, downloaded, total) => {
+          this.tracker.audio = { downloaded, total };
+          if (downloaded === total) {
+            this.stopSlowEmit();
+          }
+        });
 
-      try {
-        this.proccesser = this.ffmpegProcess([
-          'pipe:3',
-          '-i',
-          'pipe:4',
-          '-i',
-          'pipe:5',
-          '-map',
-          '0:a?',
-          '-map',
-          '1:v',
-          '-c:v',
-          'copy',
-          `${this.output}.${this.format}`
-        ]);
+        this.audio.pipe(fs.createWriteStream(`${this.output}.mp3`));
+        this.slowEmit();
+      } else {
+        this.audio = ytdl(url, {
+          quality: quality.audio
+        }).on('progress', (_, downloaded, total) => {
+          this.tracker.audio = { downloaded, total };
+        });
 
-        this.audio.pipe(this.proccesser.stdio[4]);
-        this.video.pipe(this.proccesser.stdio[5]);
-      } catch (error) {
-        consola.error(error);
-        this.event.reply('download-fail', error);
+        this.video = ytdl(url, {
+          quality: quality.video
+        }).on('progress', (_, downloaded, total) => {
+          this.tracker.video = { downloaded, total };
+        });
+
+        try {
+          this.proccesser = this.ffmpegProcess([
+            'pipe:3',
+            '-i',
+            'pipe:4',
+            '-i',
+            'pipe:5',
+            '-map',
+            '0:a?',
+            '-map',
+            '1:v',
+            '-c:v',
+            'copy',
+            `${this.output}.${this.format}`
+          ]);
+
+          this.audio.pipe(this.proccesser.stdio[4]);
+          this.video.pipe(this.proccesser.stdio[5]);
+        } catch (error) {
+          consola.error(error);
+          this.event.reply('download-fail', error);
+        }
       }
     }
   }
@@ -176,6 +212,22 @@ export default class Que {
     } catch (error) {
       consola.error(error);
     }
+  }
+
+  slowEmit() {
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = null;
+    }
+    this.timer = setInterval(() => {
+      this.event.reply('download-processing', this.tracker);
+    }, 200);
+  }
+
+  stopSlowEmit() {
+    clearInterval(this.timer);
+    this.timer = null;
+    this.event.reply('download-processing', this.tracker);
   }
 
   ffmpegProcess(args) {

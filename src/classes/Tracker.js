@@ -9,6 +9,8 @@ export default class Tracker {
     this.audio = { downloaded: 0, total: Infinity };
     this.video = { downloaded: 0, total: Infinity };
     this.merged = { frame: 0, speed: '0x', fps: 0 };
+    this.noVideo = false;
+    this.noAudio = false;
 
     this.isRunning = false;
     this.error = false;

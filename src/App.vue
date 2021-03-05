@@ -61,16 +61,26 @@
       right
       app
     >
+      <v-card
+        :style="{
+          position: 'absolute',
+          top: `${$vuetify.application.top + $vuetify.application.bar}px`,
+          width: '100%',
+          zIndex: 1
+        }"
+      >
+        <v-card-title>
+          下載中的影片
+          <v-spacer></v-spacer>
+          <v-btn text @click="startAll">全部開始</v-btn>
+        </v-card-title>
+      </v-card>
       <div
         :style="{
           height: `${$vuetify.application.top + $vuetify.application.bar}px`
         }"
       ></div>
-      <v-card>
-        <v-card-title>
-          下載中的影片
-        </v-card-title>
-      </v-card>
+      <div class="py-8"></div>
       <div v-for="tracker in getQueList" :key="tracker.id">
         <QueTracker :tracker="tracker" />
         <v-divider></v-divider>
@@ -187,6 +197,10 @@ export default {
     },
     closeWindow() {
       ipcRenderer.send('close-window');
+    },
+
+    startAll() {
+      ipcRenderer.send('start-ques');
     }
   }
 };
