@@ -13,6 +13,7 @@ export default class Tracker {
     this.noAudio = false;
 
     this.isRunning = false;
+    this.isRecording = false;
     this.error = false;
   }
 

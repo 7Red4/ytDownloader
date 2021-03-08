@@ -44,7 +44,7 @@
 
           <p class="grey--text text-body-2 my-1">直播中的影片無法選擇音質</p>
 
-          <div class="d-flex flex-wrap mb-3">
+          <div v-show="!isLive" class="d-flex flex-wrap mb-3">
             <v-checkbox
               label="下載視訊"
               :value="!sourceReq.noVideo"
@@ -73,8 +73,20 @@
               ></v-text-field>
             </template>
             <v-list>
-              <v-list-item-group v-model="vQuality" label="選擇畫質">
-                <v-list-item value="highestvideo">最高畫質</v-list-item>
+              <v-list-item-group
+                v-model="vQuality"
+                label="選擇畫質"
+                @change="
+                  v =>
+                    !v &&
+                    (vQuality = { qualityLabel: '最高畫質', mimeType: 'mp4' })
+                "
+              >
+                <v-list-item
+                  :value="{ qualityLabel: '最高畫質', mimeType: 'mp4' }"
+                >
+                  最高畫質
+                </v-list-item>
                 <v-list-item
                   v-for="(format, i) in vQualities"
                   :key="i"
@@ -108,8 +120,14 @@
               ></v-text-field>
             </template>
             <v-list>
-              <v-list-item-group v-model="aQuality" label="選擇音質">
-                <v-list-item value="highestaudio">最高音質</v-list-item>
+              <v-list-item-group
+                v-model="aQuality"
+                label="選擇音質"
+                @change="v => !v && (aQuality = { mimeType: '最高音質' })"
+              >
+                <v-list-item :value="{ mimeType: '最高音質' }">
+                  最高音質
+                </v-list-item>
                 <v-list-item
                   v-for="(format, i) in aQualities"
                   :key="i"
@@ -189,16 +207,22 @@ export default {
     ...mapGetters(['getQueList', 'getQueById']),
     vQualities() {
       return this.videoInfo
-        ? this.videoInfo.formats.filter(({ mimeType }) =>
-            /video/.test(mimeType)
-          )
+        ? this.videoInfo.formats
+            .filter(({ mimeType }) => /video/.test(mimeType))
+            .sort((a, b) =>
+              Number(a.qualityLabel.replace('p', '')) <
+              Number(b.qualityLabel.replace('p', ''))
+                ? -1
+                : 1
+            )
+            .sort((a, b) => (/mp4/.test(a.mimeType) ? -1 : 1))
         : [];
     },
     aQualities() {
       return this.videoInfo
-        ? this.videoInfo.formats.filter(({ mimeType }) =>
-            /audio/.test(mimeType)
-          )
+        ? this.videoInfo.formats
+            .filter(({ mimeType }) => /audio/.test(mimeType))
+            .sort(({ mimeType }) => (/mp4/.test(mimeType) ? -1 : 1))
         : [];
     },
     vQualityText() {
@@ -241,7 +265,7 @@ export default {
   },
 
   async mounted() {
-    if (isDevelopment) {
+    if (false) {
       const queList = (await import('@/test/testQueList.json')).default;
       this.addQueByList(queList);
     }
@@ -324,8 +348,12 @@ export default {
         url: this.ytUrl,
         path: this.path,
         quality: {
-          audio: this.aQuality ? this.aQuality.itag : 'highestaudio',
-          video: this.vQuality ? this.vQuality.itag : 'highestvideo'
+          audio: this.aQuality
+            ? this.aQuality.itag || 'highestaudio'
+            : 'highestaudio',
+          video: this.vQuality
+            ? this.vQuality.itag || 'highestvideo'
+            : 'highestvideo'
         },
         sourceReq: this.sourceReq
       });
