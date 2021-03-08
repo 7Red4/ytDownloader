@@ -21,34 +21,43 @@
         @focus="e => e.target.select()"
       ></v-text-field>
       <p class="text-caption">{{ Date(tracker.start) }}</p>
-      <p class="d-flex" v-if="!tracker.noAudio">
-        <span class="text-no-wrap mr-1">
-          音訊:
-        </span>
-        <v-progress-linear
-          color="cyan"
-          height="25"
-          :value="(tracker.audio.downloaded / tracker.audio.total) * 100"
-        ></v-progress-linear>
-      </p>
-      <p class="d-flex" v-if="!tracker.noVideo">
-        <span class="text-no-wrap mr-1">
-          視訊:
-        </span>
-        <v-progress-linear
-          color="success"
-          height="25"
-          :value="(tracker.video.downloaded / tracker.video.total) * 100"
-        ></v-progress-linear>
-      </p>
+      <template v-if="isLive">
+        <p>
+          <v-icon size="16" color="red">mdi-circle</v-icon>
+          直播中
+        </p>
+      </template>
+      <template v-else>
+        <p class="d-flex" v-if="!tracker.noAudio">
+          <span class="text-no-wrap mr-1">
+            音訊:
+          </span>
+          <v-progress-linear
+            color="cyan"
+            height="25"
+            :value="(tracker.audio.downloaded / tracker.audio.total) * 100"
+          ></v-progress-linear>
+        </p>
+        <p class="d-flex" v-if="!tracker.noVideo">
+          <span class="text-no-wrap mr-1">
+            視訊:
+          </span>
+          <v-progress-linear
+            color="success"
+            height="25"
+            :value="(tracker.video.downloaded / tracker.video.total) * 100"
+          ></v-progress-linear>
+        </p>
+      </template>
       <p v-if="!tracker.noVideo && !tracker.noAudio">
         已合併: 影格 {{ tracker.merged.frame }}, 速度
         {{ tracker.merged.speed }}, fps {{ tracker.merged.fps }}
       </p>
       <p>
-        執行狀態: {{ tracker.isRunning ? '執行中' : '閒置' }}
+        執行狀態:
+        {{ tracker.isRunning || tracker.isRecording ? '執行中' : '閒置' }}
         <v-progress-circular
-          v-if="tracker.isRunning"
+          v-if="tracker.isRunning || tracker.isRecording"
           size="12"
           width="3"
           indeterminate
@@ -61,15 +70,26 @@
         color="error"
         text
         @click="deleteQue"
-        :disabled="tracker.isRunning"
+        :disabled="tracker.isRunning || tracker.isRecording"
       >
         從佇列移除
       </v-btn>
-      <!-- <v-btn v-if="tracker.isRunning" color="error" small @click="stop">
+      <v-btn
+        v-if="isLive && tracker.isRecording"
+        color="error"
+        small
+        @click="stop"
+      >
         終止
-      </v-btn> -->
-      <v-btn :disabled="tracker.isRunning" color="primary" small @click="start">
-        下載
+      </v-btn>
+      <v-btn
+        v-if="!tracker.isRecording"
+        :disabled="!isLive && tracker.isRunning"
+        color="primary"
+        small
+        @click="start"
+      >
+        {{ isLive ? '錄製' : '下載' }}
       </v-btn>
     </v-card-actions>
   </v-card>
@@ -94,6 +114,9 @@ export default {
   },
 
   computed: {
+    isLive() {
+      return this.tracker.info.videoDetails.isLive;
+    },
     titleEditValue: {
       get() {
         return this.tracker.title;

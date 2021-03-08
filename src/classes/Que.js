@@ -107,6 +107,7 @@ export default class Que {
       this.video.pipe(
         fs.createWriteStream(PATH.join(this.path, `pending_${this.id}.ts`))
       );
+      this.tracker.isRecording = true;
     } else {
       if (this.noAudio) {
         this.video = ytdl(url, {
@@ -242,6 +243,8 @@ export default class Que {
 
     ffmpegProcess.on('close', () => {
       this.tracker.isRunning = false;
+      this.tracker.isRecording = false;
+
       this.event.reply('download-complete', this.tracker);
     });
 

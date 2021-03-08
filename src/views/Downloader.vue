@@ -241,7 +241,7 @@ export default {
   },
 
   async mounted() {
-    if (isDevelopment) {
+    if (false) {
       const queList = (await import('@/test/testQueList.json')).default;
       this.addQueByList(queList);
     }
