@@ -98,7 +98,7 @@
 </template>
 
 <script>
-import { ipcRenderer } from 'electron';
+import { ipcRenderer, webFrame } from 'electron';
 
 import { mapActions, mapGetters } from 'vuex';
 
@@ -164,6 +164,12 @@ export default {
 
     ipcRenderer.on('delete-que-reply', (event, queId) => {
       this.DELETE_QUE(queId);
+    });
+
+    window.addEventListener('keyup', e => {
+      if (e.code === 'Equal' && e.ctrlKey) {
+        webFrame.setZoomFactor(1.0);
+      }
     });
   },
 
