@@ -159,12 +159,16 @@ export default {
 
   mounted() {
     this.$refs.PlayerEl.addEventListener('timeupdate', this.timeupdate);
+    this.$refs.PlayerEl.addEventListener('play', this.onPlay);
+    this.$refs.PlayerEl.addEventListener('pause', this.onPause);
     this.$refs.PlayerEl.addEventListener('loadeddata', this.mediaReady);
     this.$refs.PlayerEl.addEventListener('ended', this.nextSong);
   },
 
   beforeDestroy() {
     this.$refs.PlayerEl.removeEventListener('timeupdate', this.timeupdate);
+    this.$refs.PlayerEl.removeEventListener('play', this.onPlay);
+    this.$refs.PlayerEl.removeEventListener('pause', this.onPause);
     this.$refs.PlayerEl.removeEventListener('loadeddata', this.mediaReady);
     this.$refs.PlayerEl.removeEventListener('ended', this.nextSong);
   },
@@ -175,9 +179,18 @@ export default {
       'SET_SHUFFLE_STATE',
       'SET_PLAYING_LIST_SHUFFLE'
     ]),
+    // listener
+    onPlay() {
+      this.isPause = false;
+    },
+    onPause() {
+      this.isPause = true;
+    },
+
     // setting
     mediaReady() {
       this.$refs.PlayerEl.currentTime = this.Song.start;
+      this.$refs.PlayerEl.volume = this.volume / 100;
       this.$refs.PlayerEl.play();
     },
     setInfo() {
