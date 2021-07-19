@@ -5,9 +5,9 @@ const QueState = {
   }),
 
   getters: {
-    getQueList: state => Object.values(state.queList),
-    getQueById: state => queId => state.queList[queId],
-    getShowQue: state => state.showQue
+    getQueList: (state) => Object.values(state.queList),
+    getQueById: (state) => (queId) => state.queList[queId],
+    getShowQue: (state) => state.showQue
   },
 
   mutations: {

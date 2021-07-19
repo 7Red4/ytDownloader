@@ -50,9 +50,7 @@
         transition="dialog-transition"
       >
         <v-card>
-          <v-card-title>
-            選擇解析度 (寬 x 高)
-          </v-card-title>
+          <v-card-title>選擇解析度 (寬 x 高)</v-card-title>
           <v-list v-if="videoDetails && videoDetails.thumbnails.length">
             <v-list-item
               v-for="resolution in videoDetails.thumbnails"
@@ -65,7 +63,7 @@
         </v-card>
       </v-dialog>
 
-      <v-snackbar v-model="snack" dark @input="v => !v && (snackMsg = '')">
+      <v-snackbar v-model="snack" dark @input="(v) => !v && (snackMsg = '')">
         <div class="d-flex align-center">
           {{ snackMsg }}
           <v-spacer></v-spacer>

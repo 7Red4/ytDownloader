@@ -1,15 +1,11 @@
 <template>
   <v-card>
-    <v-card-title v-if="!getPlayLists">
-      目前沒有歌單
-    </v-card-title>
+    <v-card-title v-if="!getPlayLists">目前沒有歌單</v-card-title>
     <v-card-text>
       <v-btn color="primary" @click="newCreate">建立</v-btn>
     </v-card-text>
     <v-card v-if="getPlayLists" class="my-2">
-      <v-card-title>
-        已建立的播放清單
-      </v-card-title>
+      <v-card-title>已建立的播放清單</v-card-title>
       <v-divider></v-divider>
       <v-card-text>
         <v-list>
@@ -31,23 +27,15 @@
                 <v-list dense>
                   <v-list-item @click="DELETE_PLAY_LIST(playList)">
                     <v-list-item-icon>
-                      <v-icon color="error">
-                        mdi-delete
-                      </v-icon>
+                      <v-icon color="error">mdi-delete</v-icon>
                     </v-list-item-icon>
-                    <v-list-item-content>
-                      刪除
-                    </v-list-item-content>
+                    <v-list-item-content>刪除</v-list-item-content>
                   </v-list-item>
                   <v-list-item @click="pickPlalistExport(playList)">
                     <v-list-item-icon>
-                      <v-icon color="primary">
-                        mdi-export
-                      </v-icon>
+                      <v-icon color="primary">mdi-export</v-icon>
                     </v-list-item-icon>
-                    <v-list-item-content>
-                      輸出此歌單
-                    </v-list-item-content>
+                    <v-list-item-content>輸出此歌單</v-list-item-content>
                   </v-list-item>
                 </v-list>
               </v-menu>
@@ -68,7 +56,7 @@
                   ref="playListTitleEl"
                   v-model="playListTitle"
                   label="清單名稱"
-                  :rules="[v => !!v || '填個名字吧']"
+                  :rules="[(v) => !!v || '填個名字吧']"
                 ></v-text-field>
               </v-form>
             </v-col>
@@ -98,9 +86,7 @@
                 ></v-checkbox>
               </v-list-item-icon>
               <v-list-item-content>
-                <v-list-item-title>
-                  全選
-                </v-list-item-title>
+                <v-list-item-title>全選</v-list-item-title>
               </v-list-item-content>
             </v-list-item>
             <v-list-item-group v-model="pickedSongIds" multiple>
@@ -234,7 +220,7 @@ export default {
     edit(list) {
       this.listId = list.id;
       this.playListTitle = list.title;
-      this.pickingList = Object.values(this.getSongs).sort(song =>
+      this.pickingList = Object.values(this.getSongs).sort((song) =>
         list.songs.includes(song.id) ? -1 : 1
       );
       this.pickedSongIds = list.songs;
@@ -265,7 +251,7 @@ export default {
 
       const exporting = {
         title: this.exportListPending.title,
-        songs: this.exportListPending.songs.map(id => {
+        songs: this.exportListPending.songs.map((id) => {
           const { ytId, start, end, tag } = this.getSongById(id);
           return {
             ytId,

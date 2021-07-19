@@ -12,15 +12,31 @@ import filenamify from 'filenamify';
 import Tracker from './Tracker';
 
 const appRootDir = require('app-root-dir').get();
+const isDevelopment = process.env.NODE_ENV !== 'production';
 
-const ffmpeg = PATH.join(
-  appRootDir,
-  'node_modules',
-  'ffmpeg-static',
-  os.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg'
-);
+const ffmpeg = isDevelopment
+  ? PATH.join(
+      appRootDir,
+      'src',
+      'binaries',
+      os.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg'
+    )
+  : PATH.join(appRootDir, os.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg');
 
-const getInfo = async url => {
+// TODO: find out how to pipe video & audio into ffmpeg
+const youtubeDl = isDevelopment
+  ? PATH.join(
+      appRootDir,
+      'src',
+      'binaries',
+      os.platform === 'win32' ? 'youtube-dl.exe' : 'youtube-dl'
+    )
+  : PATH.join(
+      appRootDir,
+      os.platform === 'win32' ? 'youtube-dl.exe' : 'youtube-dl'
+    );
+
+const getInfo = async (url) => {
   return await ytdl.getBasicInfo(url);
 };
 
@@ -43,6 +59,8 @@ export default class Que {
     this.proccesser = null;
     this.noVideo = false;
     this.noAudio = false;
+
+    this.dlMethod = 'ytdl';
   }
 
   setReq(req) {
@@ -254,11 +272,8 @@ export default class Que {
       this.event.reply('download-processing', this.tracker);
     });
 
-    ffmpegProcess.stdio[3].on('data', chunk => {
-      const lines = chunk
-        .toString()
-        .trim()
-        .split('\n');
+    ffmpegProcess.stdio[3].on('data', (chunk) => {
+      const lines = chunk.toString().trim().split('\n');
 
       const args = {};
 

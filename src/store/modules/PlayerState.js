@@ -23,26 +23,26 @@ const PlayerState = {
     shuffleState: 0
   }),
   getters: {
-    getSourceById: state => id => state.playSources[id],
-    getSongById: state => id => state.songs[id],
-    getPlayListById: state => id => state.playLists[id],
-    getSongsBySourceId: state => ytId => state.playSourcesSongMap[ytId],
-    getCurrentPlayingIdx: state =>
-      state.playingListIds.findIndex(id => id === state.currentPlaying.id),
+    getSourceById: (state) => (id) => state.playSources[id],
+    getSongById: (state) => (id) => state.songs[id],
+    getPlayListById: (state) => (id) => state.playLists[id],
+    getSongsBySourceId: (state) => (ytId) => state.playSourcesSongMap[ytId],
+    getCurrentPlayingIdx: (state) =>
+      state.playingListIds.findIndex((id) => id === state.currentPlaying.id),
 
-    getPlaySources: state =>
+    getPlaySources: (state) =>
       Object.keys(state.playSources).length ? state.playSources : null,
-    getSongs: state => (Object.keys(state.songs).length ? state.songs : null),
-    getPlaySourcesSongMap: state =>
+    getSongs: (state) => (Object.keys(state.songs).length ? state.songs : null),
+    getPlaySourcesSongMap: (state) =>
       Object.keys(state.playSourcesSongMap).length
         ? state.playSourcesSongMap
         : null,
-    getCurrentPlaying: state => state.currentPlaying,
-    getPlayingListIds: state => state.playingListIds,
-    getSetListIds: state => state.setListIds,
-    getPlayLists: state =>
+    getCurrentPlaying: (state) => state.currentPlaying,
+    getPlayingListIds: (state) => state.playingListIds,
+    getSetListIds: (state) => state.setListIds,
+    getPlayLists: (state) =>
       Object.keys(state.playLists).length ? state.playLists : null,
-    getShuffleState: state => state.shuffleState
+    getShuffleState: (state) => state.shuffleState
   },
   mutations: {
     setPlaySource(state, source) {

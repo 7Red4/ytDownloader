@@ -3,7 +3,7 @@ export default class Song {
     const now = Date.now();
     this.id = now;
 
-    Object.keys(song).forEach(key => {
+    Object.keys(song).forEach((key) => {
       this[key] = song[key];
     });
   }
