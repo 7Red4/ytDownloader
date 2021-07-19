@@ -54,7 +54,7 @@
 
     <v-navigation-drawer
       :value="getShowQue"
-      @input="v => SET_SHOW_QUE(v)"
+      @input="(v) => SET_SHOW_QUE(v)"
       class="que_drawer"
       width="400"
       clipped
@@ -64,7 +64,9 @@
       <v-card
         :style="{
           position: 'absolute',
-          top: `${$vuetify.application.top + $vuetify.application.bar}px`,
+          top: $vuetify.breakpoint.mdAndUp
+            ? 0
+            : `${$vuetify.application.top + $vuetify.application.bar}px`,
           width: '100%',
           zIndex: 1
         }"
@@ -77,7 +79,9 @@
       </v-card>
       <div
         :style="{
-          height: `${$vuetify.application.top + $vuetify.application.bar}px`
+          height: $vuetify.breakpoint.mdAndUp
+            ? 0
+            : `${$vuetify.application.top + $vuetify.application.bar}px`
         }"
       ></div>
       <div class="py-8"></div>
@@ -166,7 +170,7 @@ export default {
       this.DELETE_QUE(queId);
     });
 
-    window.addEventListener('keyup', e => {
+    window.addEventListener('keyup', (e) => {
       if (e.code === 'Equal' && e.ctrlKey) {
         webFrame.setZoomFactor(1.0);
       }

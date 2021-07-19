@@ -94,8 +94,8 @@
             <v-text-field
               v-model="tag"
               label="標題"
-              :rules="[v => !!v || '填點什麼吧']"
-              @focus="e => e.target.select()"
+              :rules="[(v) => !!v || '填點什麼吧']"
+              @focus="(e) => e.target.select()"
               lazy-validation
             ></v-text-field>
           </v-col>
@@ -335,7 +335,7 @@ export default {
     },
     async importSource(sources, playlistId) {
       const wait = () => {
-        return new Promise(resolve => setTimeout(resolve, 2));
+        return new Promise((resolve) => setTimeout(resolve, 2));
       };
 
       for (const { ytUrl, songs } of sources) {
@@ -398,7 +398,7 @@ export default {
       const sourceList = [];
       const groupByYtId = {};
 
-      songs.forEach(song => {
+      songs.forEach((song) => {
         !groupByYtId[song.ytId] && (groupByYtId[song.ytId] = []);
         groupByYtId[song.ytId].push(song);
       });
@@ -411,14 +411,15 @@ export default {
       await this.importSource(sourceList, playlistId);
     },
     handleFocus(e) {
-      navigator.clipboard.readText().then(text => {
+      navigator.clipboard.readText().then((text) => {
         if (this.ytUrl === text) return;
         this.analyzeText(text, e);
       });
     },
 
     analyzeText(text, e) {
-      const urlReg = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?/;
+      const urlReg =
+        /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?/;
       const isUrl = urlReg.test(text);
       const hasYoutube = /youtube|youtu.be/.test(text);
 

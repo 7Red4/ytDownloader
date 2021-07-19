@@ -1,8 +1,6 @@
 <template>
   <v-card>
-    <v-card-title v-if="!hasSources">
-      目前沒有已獲取的的歌曲
-    </v-card-title>
+    <v-card-title v-if="!hasSources">目前沒有已獲取的的歌曲</v-card-title>
     <v-card-text>
       <v-card
         v-for="(playSource, id) of getPlaySources"

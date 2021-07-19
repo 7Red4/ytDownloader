@@ -18,7 +18,7 @@
         :value="titleEditValue"
         @blur="updateTitle"
         @keyup.enter="updateTitle"
-        @focus="e => e.target.select()"
+        @focus="(e) => e.target.select()"
       ></v-text-field>
       <p class="text-caption">{{ Date(tracker.start) }}</p>
       <template v-if="isLive">
@@ -29,9 +29,7 @@
       </template>
       <template v-else>
         <p class="d-flex" v-if="!tracker.noAudio">
-          <span class="text-no-wrap mr-1">
-            音訊:
-          </span>
+          <span class="text-no-wrap mr-1">音訊:</span>
           <v-progress-linear
             color="cyan"
             height="25"
@@ -39,9 +37,7 @@
           ></v-progress-linear>
         </p>
         <p class="d-flex" v-if="!tracker.noVideo">
-          <span class="text-no-wrap mr-1">
-            視訊:
-          </span>
+          <span class="text-no-wrap mr-1">視訊:</span>
           <v-progress-linear
             color="success"
             height="25"

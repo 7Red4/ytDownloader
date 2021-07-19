@@ -25,7 +25,8 @@ async function createWindow() {
     height: 960,
     titleBarStyle: 'hidden',
     webPreferences: {
-      nodeIntegration: process.env.ELECTRON_NODE_INTEGRATION
+      nodeIntegration: true,
+      contextIsolation: false
     }
   });
 
@@ -61,7 +62,7 @@ app.on('ready', async () => {
 
 if (isDevelopment) {
   if (process.platform === 'win32') {
-    process.on('message', data => {
+    process.on('message', (data) => {
       if (data === 'graceful-exit') {
         app.quit();
       }
@@ -74,7 +75,7 @@ if (isDevelopment) {
 }
 
 // ipc events
-ipcMain.on('get-platform', event => {
+ipcMain.on('get-platform', (event) => {
   const platform = os.platform();
   event.reply('get-platform-reply', platform);
 });
@@ -96,7 +97,7 @@ ipcMain.on('get-yt-info', async (event, url) => {
   }
 });
 
-ipcMain.on('pick-path', async event => {
+ipcMain.on('pick-path', async (event) => {
   const path = await dialog.showOpenDialog({
     properties: ['openFile', 'openDirectory', 'multiSelections']
   });
@@ -151,7 +152,7 @@ ipcMain.on('start-que-by-id', async (event, queId) => {
 
 ipcMain.on('start-ques', async (event, req) => {
   try {
-    queMap.forEach(que => {
+    queMap.forEach((que) => {
       que.startProcess({ event });
     });
   } catch (error) {
@@ -193,7 +194,7 @@ ipcMain.on('pick-thumbnail-path', async (event, title) => {
 ipcMain.on('download-thumbnail', async (event, { url, path }) => {
   try {
     const file = fs.createWriteStream(path);
-    https.get(url, response => {
+    https.get(url, (response) => {
       response.pipe(file);
       response.on('close', () => {
         event.reply('download-thumbnail-complete');

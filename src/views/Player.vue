@@ -41,7 +41,7 @@
       </v-slide-y-reverse-transition>
     </template>
 
-    <v-snackbar v-model="snack" dark @input="v => !v && (snackMsg = '')">
+    <v-snackbar v-model="snack" dark @input="(v) => !v && (snackMsg = '')">
       <div class="d-flex align-center">
         {{ snackMsg }}
         <v-spacer></v-spacer>

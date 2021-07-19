@@ -14,9 +14,7 @@
           <v-list>
             <v-list-item @click="showShongDetail(getCurrentPlaying)">
               <v-list-item-avatar>
-                <v-icon color="primary">
-                  mdi-music
-                </v-icon>
+                <v-icon color="primary">mdi-music</v-icon>
               </v-list-item-avatar>
               <v-list-item-content>
                 <v-list-item-title class="text-truncate">
@@ -139,7 +137,7 @@ export default {
       'getSourceById'
     ]),
     playingList() {
-      return this.getPlayingListIds.map(id => this.getSongById(id));
+      return this.getPlayingListIds.map((id) => this.getSongById(id));
     }
   },
 

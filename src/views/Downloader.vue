@@ -29,7 +29,7 @@
           <v-text-field
             label="標題"
             v-model="title"
-            :rules="[v => !!v || '標題不為空']"
+            :rules="[(v) => !!v || '標題不為空']"
             outlined
           ></v-text-field>
 
@@ -38,7 +38,7 @@
             append-icon="mdi-dots-horizontal"
             v-model="path"
             @click:append="pickFilePath"
-            :rules="[v => !!v || '請選擇路徑']"
+            :rules="[(v) => !!v || '請選擇路徑']"
             outlined
           ></v-text-field>
 
@@ -50,7 +50,7 @@
               :value="!sourceReq.noVideo"
               :input-value="!sourceReq.noVideo"
               :disabled="!sourceReq.noVideo && sourceReq.noAudio"
-              @change="v => (sourceReq.noVideo = !v)"
+              @change="(v) => (sourceReq.noVideo = !v)"
             ></v-checkbox>
             <div class="px-3"></div>
             <v-checkbox
@@ -58,7 +58,7 @@
               :value="!sourceReq.noAudio"
               :input-value="!sourceReq.noAudio"
               :disabled="!sourceReq.noAudio && sourceReq.noVideo"
-              @change="v => (sourceReq.noAudio = !v)"
+              @change="(v) => (sourceReq.noAudio = !v)"
             ></v-checkbox>
           </div>
 
@@ -77,7 +77,7 @@
                 v-model="vQuality"
                 label="選擇畫質"
                 @change="
-                  v =>
+                  (v) =>
                     !v &&
                     (vQuality = { qualityLabel: '最高畫質', mimeType: 'mp4' })
                 "
@@ -123,7 +123,7 @@
               <v-list-item-group
                 v-model="aQuality"
                 label="選擇音質"
-                @change="v => !v && (aQuality = { mimeType: '最高音質' })"
+                @change="(v) => !v && (aQuality = { mimeType: '最高音質' })"
               >
                 <v-list-item :value="{ mimeType: '最高音質' }">
                   最高音質
@@ -155,7 +155,7 @@
       </template>
     </v-container>
 
-    <v-snackbar v-model="snack" dark @input="v => !v && (snackMsg = '')">
+    <v-snackbar v-model="snack" dark @input="(v) => !v && (snackMsg = '')">
       <div class="d-flex align-center">
         {{ snackMsg }}
         <v-spacer></v-spacer>
@@ -264,18 +264,15 @@ export default {
     );
   },
 
-  async mounted() {
-    if (false) {
-      const queList = (await import('@/test/testQueList.json')).default;
-      this.addQueByList(queList);
-    }
+  mounted() {
+    //
   },
 
   methods: {
     ...mapActions(['SET_QUE', 'DELETE_QUE', 'SET_SHOW_QUE']),
     async addQueByList(queList, andStart = false) {
       const wait = () => {
-        return new Promise(resolve => setTimeout(resolve, 2));
+        return new Promise((resolve) => setTimeout(resolve, 2));
       };
 
       for (const { title, url } of queList) {
@@ -309,19 +306,20 @@ export default {
         }
       };
 
-      Object.keys(originData).forEach(key => {
+      Object.keys(originData).forEach((key) => {
         this[key] = originData[key];
       });
     },
     handleFocus(e) {
-      navigator.clipboard.readText().then(text => {
+      navigator.clipboard.readText().then((text) => {
         if (this.ytUrl === text) return;
         this.analyzeText(text, e);
       });
     },
 
     analyzeText(text, e) {
-      const urlReg = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?/;
+      const urlReg =
+        /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?/;
       const isUrl = urlReg.test(text);
       const hasYoutube = /youtube|youtu.be/.test(text);
 

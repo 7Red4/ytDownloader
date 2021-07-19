@@ -6,7 +6,7 @@
         "./*"
       ],
       "@/*": [
-        "./*"
+        "./src/*"
       ],
       "~~/*": [
         "./*"
@@ -18,7 +18,8 @@
   },
   "exclude": [
     "node_modules",
-    ".nuxt",
+    "dist_electron",
+    ".vscode",
     "dist"
   ]
 }
