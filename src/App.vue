@@ -52,45 +52,6 @@
       </v-btn>
     </v-app-bar>
 
-    <v-navigation-drawer
-      :value="getShowQue"
-      @input="(v) => SET_SHOW_QUE(v)"
-      class="que_drawer"
-      width="400"
-      clipped
-      right
-      app
-    >
-      <v-card
-        :style="{
-          position: 'absolute',
-          top: $vuetify.breakpoint.mdAndUp
-            ? 0
-            : `${$vuetify.application.top + $vuetify.application.bar}px`,
-          width: '100%',
-          zIndex: 1
-        }"
-      >
-        <v-card-title>
-          下載中的影片
-          <v-spacer></v-spacer>
-          <v-btn text @click="startAll">全部開始</v-btn>
-        </v-card-title>
-      </v-card>
-      <div
-        :style="{
-          height: $vuetify.breakpoint.mdAndUp
-            ? 0
-            : `${$vuetify.application.top + $vuetify.application.bar}px`
-        }"
-      ></div>
-      <div class="py-8"></div>
-      <div v-for="tracker in getQueList" :key="tracker.id">
-        <QueTracker :tracker="tracker" />
-        <v-divider></v-divider>
-      </div>
-    </v-navigation-drawer>
-
     <v-main>
       <transition name="route-change-transition">
         <keep-alive>
@@ -98,6 +59,48 @@
         </keep-alive>
       </transition>
     </v-main>
+
+    <v-navigation-drawer
+      :value="getShowQue"
+      @input="(v) => SET_SHOW_QUE(v)"
+      class="que_drawer"
+      width="400"
+      disable-resize-watcher
+      clipped
+      right
+      app
+    >
+      <v-card :ripple="false" @click.right="showMenu" class="fill-height">
+        <SizeBox
+          :height="$vuetify.application.top + $vuetify.application.bar"
+          class="d-block d-lg-none"
+        />
+        <v-card-title>
+          下載中的影片
+          <v-spacer></v-spacer>
+        </v-card-title>
+        <div class="pt-4">
+          <div v-for="tracker in getQueList" :key="tracker.id">
+            <QueTracker :tracker="tracker" />
+            <v-divider></v-divider>
+          </div>
+        </div>
+      </v-card>
+
+      <v-menu
+        v-model="isMenuShow"
+        :position-x="x"
+        :position-y="y"
+        absolute
+        offset-y
+      >
+        <v-list>
+          <v-list-item @click="startAll">全部開始</v-list-item>
+          <v-list-item @click="deleteAll">全部刪除</v-list-item>
+          <v-list-item @canplay="stopAll">全部停止</v-list-item>
+        </v-list>
+      </v-menu>
+    </v-navigation-drawer>
   </v-app>
 </template>
 
@@ -119,7 +122,11 @@ export default {
     return {
       platform: '',
       isMaximized: false,
-      isDrawer: false
+      isDrawer: false,
+
+      isMenuShow: false,
+      x: 0,
+      y: 0
     };
   },
 
@@ -209,8 +216,26 @@ export default {
       ipcRenderer.send('close-window');
     },
 
+    showMenu(e) {
+      e.preventDefault();
+      this.isMenuShow = false;
+      this.x = e.clientX;
+      this.y = e.clientY;
+      this.$nextTick(() => {
+        this.isMenuShow = true;
+      });
+    },
+
     startAll() {
       ipcRenderer.send('start-ques');
+    },
+
+    deleteAll() {
+      ipcRenderer.send('delete-ques');
+    },
+
+    stopAll() {
+      ipcRenderer.send('stop-ques');
     }
   }
 };

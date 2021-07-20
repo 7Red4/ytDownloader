@@ -7,6 +7,8 @@ import DB from './plugins/database';
 
 import '@/assets/style/main.scss';
 
+import './GlobalComponentsInject.js';
+
 function parseYtId(url) {
   var regExp =
     /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;

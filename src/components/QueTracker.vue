@@ -62,31 +62,70 @@
       </p>
     </v-card-text>
     <v-card-actions class="d-flex justify-end">
-      <v-btn
-        color="error"
-        text
-        @click="deleteQue"
-        :disabled="tracker.isRunning || tracker.isRecording"
-      >
-        從佇列移除
-      </v-btn>
-      <v-btn
-        v-if="isLive && tracker.isRecording"
-        color="error"
-        small
-        @click="stop"
-      >
-        終止
-      </v-btn>
-      <v-btn
-        v-if="!tracker.isRecording"
-        :disabled="!isLive && tracker.isRunning"
-        color="primary"
-        small
-        @click="start"
-      >
-        {{ isLive ? '錄製' : '下載' }}
-      </v-btn>
+      <v-tooltip bottom>
+        <template #activator="{ on }">
+          <v-icon
+            v-on="on"
+            color="success"
+            @click="showItemInFolder"
+            class="mx-2"
+          >
+            mdi-folder-open-outline
+          </v-icon>
+        </template>
+
+        <span>打開檔案位置</span>
+      </v-tooltip>
+
+      <v-tooltip bottom>
+        <template #activator="{ on }">
+          <v-icon
+            v-on="on"
+            color="error"
+            @click="deleteQue"
+            :disabled="tracker.isRunning || tracker.isRecording"
+            class="mx-2"
+          >
+            mdi-trash-can
+          </v-icon>
+        </template>
+
+        <span>從佇列移除</span>
+      </v-tooltip>
+
+      <v-tooltip v-if="isLive && tracker.isRecording" bottom>
+        <template #activator="{ on }">
+          <v-icon v-on="on" color="error" @click="stop" class="mx-2">
+            mdi-stop
+          </v-icon>
+        </template>
+
+        <span>終止</span>
+      </v-tooltip>
+
+      <v-tooltip v-if="!tracker.isRecording" bottom>
+        <template #activator="{ on }">
+          <v-icon
+            v-on="on"
+            :disabled="!isLive && tracker.isRunning"
+            :color="isLive ? 'red' : 'primary'"
+            @click="start"
+            class="mx-2"
+          >
+            {{
+              isLive
+                ? 'mdi-record'
+                : downloadComplete
+                ? 'mdi-play-speed'
+                : 'mdi-play'
+            }}
+          </v-icon>
+        </template>
+
+        <span>
+          {{ isLive ? '錄製' : downloadComplete ? '重新下載' : '下載' }}
+        </span>
+      </v-tooltip>
     </v-card-actions>
   </v-card>
 </template>
@@ -128,6 +167,12 @@ export default {
       set(v) {
         this.editQue({ path: v });
       }
+    },
+    downloadComplete() {
+      return (
+        this.tracker.audio.downloaded / this.tracker.audio.total === 1 ||
+        this.tracker.video.downloaded / this.tracker.video.total === 1
+      );
     }
   },
 
@@ -159,6 +204,9 @@ export default {
     },
     editQue({ title, path } = {}) {
       ipcRenderer.send('edit-que', { id: this.tracker.id, title, path });
+    },
+    showItemInFolder() {
+      ipcRenderer.send('show-item-in-folder', this.tracker.path);
     }
   }
 };

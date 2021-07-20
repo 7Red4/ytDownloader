@@ -1,15 +1,13 @@
 module.exports = {
-  configureWebpack: {
-    // Webpack configuration applied to web builds and the electron renderer process
-  },
+  transpileDependencies: ['vuetify'],
   pluginOptions: {
     electronBuilder: {
       nodeIntegration: true,
       builderOptions: {
         extraFiles: [
           {
-            from: 'node_modules/ffmpeg-static',
-            to: './resources/node_modules/ffmpeg-static/'
+            from: 'src/binaries',
+            to: './resources/'
           }
         ]
       }

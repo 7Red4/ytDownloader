@@ -62,6 +62,26 @@
             ></v-checkbox>
           </div>
 
+          <v-row>
+            <v-col cols="auto">
+              <v-select
+                v-show="!isLive"
+                :items="[
+                  { text: 'ytdl', value: 'ytdl' },
+                  {
+                    text: 'youtube-dl 開發中',
+                    value: 'youtube-dl',
+                    disabled: true
+                  }
+                ]"
+                v-model="dlMethod"
+                label="下載方式"
+                mandatory
+                outlined
+              ></v-select>
+            </v-col>
+          </v-row>
+
           <v-menu max-height="400">
             <template #activator="{ on }">
               <v-text-field
@@ -73,24 +93,12 @@
               ></v-text-field>
             </template>
             <v-list>
-              <v-list-item-group
-                v-model="vQuality"
-                label="選擇畫質"
-                @change="
-                  (v) =>
-                    !v &&
-                    (vQuality = { qualityLabel: '最高畫質', mimeType: 'mp4' })
-                "
-              >
-                <v-list-item
-                  :value="{ qualityLabel: '最高畫質', mimeType: 'mp4' }"
-                >
-                  最高畫質
-                </v-list-item>
+              <v-list-item-group v-model="vQuality" label="選擇畫質">
                 <v-list-item
                   v-for="(format, i) in vQualities"
                   :key="i"
                   :value="format"
+                  :disabled="format.itag === vQuality.itag"
                   two-line
                 >
                   <v-list-item-content>
@@ -120,18 +128,12 @@
               ></v-text-field>
             </template>
             <v-list>
-              <v-list-item-group
-                v-model="aQuality"
-                label="選擇音質"
-                @change="(v) => !v && (aQuality = { mimeType: '最高音質' })"
-              >
-                <v-list-item :value="{ mimeType: '最高音質' }">
-                  最高音質
-                </v-list-item>
+              <v-list-item-group v-model="aQuality" label="選擇音質">
                 <v-list-item
                   v-for="(format, i) in aQualities"
                   :key="i"
                   :value="format"
+                  :disabled="format.itag === aQuality.itag"
                   two-line
                 >
                   <v-list-item-content>
@@ -188,6 +190,7 @@ export default {
       path: this.$db.get('dl_path').value() || '',
       tumbnailPath: '',
       thumbnailURL: '',
+      dlMethod: 'ytdl',
       title: '',
       loading: false,
       snack: false,
@@ -208,7 +211,10 @@ export default {
     vQualities() {
       return this.videoInfo
         ? this.videoInfo.formats
-            .filter(({ mimeType }) => /video/.test(mimeType))
+            .filter(
+              ({ mimeType }) =>
+                /video/.test(mimeType) && !/av01/g.test(mimeType)
+            )
             .sort((a, b) =>
               Number(a.qualityLabel.replace('p', '')) <
               Number(b.qualityLabel.replace('p', ''))
@@ -242,6 +248,14 @@ export default {
   watch: {
     videoInfo(v) {
       v && (this.title = filenamify(v.videoDetails.title));
+      this.$nextTick(() => {
+        if (this.vQualities.length) {
+          this.vQuality = this.vQualities[0];
+        }
+        if (this.aQualities.length) {
+          this.aQuality = this.aQualities[0];
+        }
+      });
     },
     path(v) {
       this.$db.set('dl_path', v).write();
@@ -295,6 +309,7 @@ export default {
         path: this.$db.get('dl_path').value() || '',
         tumbnailPath: '',
         thumbnailURL: '',
+        dlMethod: 'ytdl',
         title: '',
         loading: false,
         videoInfo: null,
@@ -345,6 +360,7 @@ export default {
         title: this.title,
         url: this.ytUrl,
         path: this.path,
+        dlMethod: this.dlMethod,
         quality: {
           audio: this.aQuality
             ? this.aQuality.itag || 'highestaudio'

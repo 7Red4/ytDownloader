@@ -2,7 +2,7 @@ import fs from 'fs';
 import https from 'https';
 import os from 'os';
 
-import { app, protocol, BrowserWindow, ipcMain, dialog } from 'electron';
+import { app, protocol, BrowserWindow, ipcMain, dialog, shell } from 'electron';
 import { createProtocol } from 'vue-cli-plugin-electron-builder/lib';
 import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer';
 import { getInfo } from './controller/ytdl.js';
@@ -139,6 +139,19 @@ ipcMain.on('delete-que', async (event, queId) => {
   }
 });
 
+ipcMain.on('delete-ques', async (event) => {
+  queMap.forEach(({ id, stopProcess }) => {
+    try {
+      stopProcess();
+      queMap.delete(id);
+      event.reply('delete-que-reply', id);
+    } catch (error) {
+      event.reply('delete-fail', id);
+      consola.error(error);
+    }
+  });
+});
+
 ipcMain.on('start-que-by-id', async (event, queId) => {
   const que = queMap.get(queId);
   try {
@@ -151,14 +164,14 @@ ipcMain.on('start-que-by-id', async (event, queId) => {
 });
 
 ipcMain.on('start-ques', async (event, req) => {
-  try {
-    queMap.forEach((que) => {
+  queMap.forEach((que) => {
+    try {
       que.startProcess({ event });
-    });
-  } catch (error) {
-    // event.reply('start-fail', que.id);
-    consola.error(error);
-  }
+    } catch (error) {
+      // event.reply('start-fail', que.id);
+      consola.error(error);
+    }
+  });
 });
 
 ipcMain.on('stop-que', async (event, queId) => {
@@ -168,6 +181,17 @@ ipcMain.on('stop-que', async (event, queId) => {
     event.reply('stoped-error');
     consola.error(error);
   }
+});
+
+ipcMain.on('stop-que', async (event) => {
+  queMap.forEach(({ id, stopProcess }) => {
+    try {
+      stopProcess();
+    } catch (error) {
+      event.reply('stoped-error', id);
+      consola.error(error);
+    }
+  });
 });
 
 ipcMain.on('edit-que', (event, tracker) => {
@@ -226,4 +250,8 @@ ipcMain.on('export-list', async (event, { exporting, path }) => {
     event.reply('export-fail', error);
     consola.error(error);
   }
+});
+
+ipcMain.on('show-item-in-folder', (event, path) => {
+  shell.openPath(path);
 });
