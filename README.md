@@ -8,9 +8,7 @@
 
 ver 2.2.0
 
-[windows 載點](/release/2.2.0/yt-downloader%20Setup.exe?raw=true)
-
-[mac 載點](/release/2.2.0/yt-downloader.dmg?raw=true)
+[載點](https://github.com/7Red4/ytDownloader/releases)
 
 ## 使用方法
 
@@ -26,6 +24,10 @@ ver 2.2.0
 
 ## 功能
 
+### 通用
+- [ ] 可以使用設定
+- [ ] 能夠在背景運行
+
 ### Downloader
 
 - [x] 下載 youtube 影片
@@ -35,10 +37,18 @@ ver 2.2.0
 - [x] 下載首圖
 - [x] 只下載 音/視訊
 - [x] 大量下載
+- [x] 只下載 音/視訊
+- [ ] 可選擇使用 [youtube-dl](https://github.com/ytdl-org/youtube-dl) 的方法下載 
+- [ ] 可以選定下載片段
+- [ ] 可以設定時間自動錄製直播中節目
 
 ### Player
 
 - [x] 透過時間標籤製作歌單
 - [x] 透過當按匯入歌單
 - [x] 儲存/輸出 歌單
+- [ ] 線上儲存歌單
 - [ ] 分享歌單
+- [ ] 自動引入歌單（可在設定調整是否自動）
+
+
