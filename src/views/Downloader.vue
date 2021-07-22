@@ -263,8 +263,13 @@ export default {
   },
 
   created() {
-    ipcRenderer.on('get-yt-info-reply', (event, info) => {
-      this.videoInfo = info;
+    ipcRenderer.on('get-yt-info-reply', (event, { result, error }) => {
+      if (error) {
+        console.error(error);
+        this.SET_ERROR(error);
+      } else {
+        this.videoInfo = result;
+      }
       this.loading = false;
     });
 
@@ -283,7 +288,7 @@ export default {
   },
 
   methods: {
-    ...mapActions(['SET_QUE', 'DELETE_QUE', 'SET_SHOW_QUE']),
+    ...mapActions(['SET_QUE', 'DELETE_QUE', 'SET_SHOW_QUE', 'SET_ERROR']),
     async addQueByList(queList, andStart = false) {
       const wait = () => {
         return new Promise((resolve) => setTimeout(resolve, 2));

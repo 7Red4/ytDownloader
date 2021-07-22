@@ -47,3 +47,15 @@ new Vue({
   vuetify,
   render: (h) => h(App)
 }).$mount('#app');
+
+let callStackCounter = 0;
+
+Vue.config.errorHandler = (err, vm, info) => {
+  if (callStackCounter >= 60) {
+    callStackCounter = 0;
+    return;
+  }
+  console.log({ err, vm, info });
+  store.dispatch('SET_ERROR', { err, info });
+  callStackCounter++;
+};

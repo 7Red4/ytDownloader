@@ -101,6 +101,8 @@
         </v-list>
       </v-menu>
     </v-navigation-drawer>
+
+    <BotSheet :info="getError" />
   </v-app>
 </template>
 
@@ -110,13 +112,14 @@ import { ipcRenderer, webFrame } from 'electron';
 import { mapActions, mapGetters } from 'vuex';
 
 import QueTracker from '@/components/QueTracker';
+import BotSheet from '@/components/BotSheet';
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
 export default {
   name: 'App',
 
-  components: { QueTracker },
+  components: { QueTracker, BotSheet },
 
   data() {
     return {
@@ -131,7 +134,7 @@ export default {
   },
 
   computed: {
-    ...mapGetters(['getShowQue', 'getQueList']),
+    ...mapGetters(['getShowQue', 'getQueList', 'getError']),
     isMac() {
       return this.platform === 'darwin';
     }
