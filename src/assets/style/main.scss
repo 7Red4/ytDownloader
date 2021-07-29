@@ -1,8 +1,8 @@
-@import url('../css/roboto/roboto-fontface.css');
 @import url('./NotoSansTC.scss');
 @import url('./variables.scss');
 
-:root, body {
+:root,
+body {
   overflow: hidden;
 }
 
@@ -14,7 +14,6 @@
   width: 6px;
   border-radius: 100px;
 }
-
 
 .theme--light {
   &::-webkit-scrollbar {
@@ -35,9 +34,9 @@
 }
 
 .v-application {
-    max-height: 100vh;
-    overflow-y: auto;
-    overflow-x: hidden;
+  max-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
   *:not(.mdi) {
     font-family: 'Noto Sans TC', Roboto, sans-serif !important;
   }

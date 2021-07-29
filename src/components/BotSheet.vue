@@ -8,7 +8,7 @@
     <v-card :height="sheetHeight" :class="{ 'no-select': isGrabing }">
       <v-card-title class="elevation-3">
         <span class="text-title">CONSOLE</span>
-        <v-spacer ref="GrabArea" class="grab_area fill-height"></v-spacer>
+        <div @mousedown="mousedown" class="grab_area fill-height"></div>
         <v-icon @click="resetSheet">mdi-close</v-icon>
       </v-card-title>
 
@@ -65,13 +65,11 @@ export default {
   },
 
   mounted() {
-    this.$refs.GrabArea.addEventListener('mousedown', this.mousedown);
     window.addEventListener('mousemove', this.mousemove);
     window.addEventListener('mouseup', this.mouseup);
   },
 
   beforeDestroy() {
-    this.$refs.GrabArea.removeEventListener('mousedown', this.mousedown);
     window.removeEventListener('mousemove', this.mousemove);
     window.removeEventListener('mouseup', this.mouseup);
   },
@@ -102,6 +100,7 @@ export default {
 <style lang="scss" scoped>
 .grab_area {
   cursor: ns-resize;
+  flex: 1;
 }
 
 .no-select {
