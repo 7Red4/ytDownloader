@@ -64,7 +64,7 @@
       :value="getShowQue"
       @input="(v) => SET_SHOW_QUE(v)"
       class="que_drawer"
-      width="400"
+      width="600"
       disable-resize-watcher
       clipped
       right
@@ -164,6 +164,10 @@ export default {
     // set tracker event listener
     ipcRenderer.on('download-processing', (event, tracker) => {
       this.SET_QUE(tracker);
+    });
+
+    ipcRenderer.on('snapshot-update', (event, tracker) => {
+      this.SET_QUE({ ...tracker, timestamp: Date.now() });
     });
 
     ipcRenderer.on('download-complete', (event, tracker) => {

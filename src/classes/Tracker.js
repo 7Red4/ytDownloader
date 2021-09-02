@@ -5,7 +5,7 @@ export default class Tracker {
     this.title = '';
     this.path = '';
 
-    this.start = Date.now();
+    this.start = this.start || Date.now();
     this.audio = { downloaded: 0, total: Infinity };
     this.video = { downloaded: 0, total: Infinity };
     this.merged = { frame: 0, speed: '0x', fps: 0 };

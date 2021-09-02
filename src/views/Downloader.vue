@@ -379,6 +379,9 @@ export default {
       this.snackMsg = '已新增至佇列';
       this.snack = true;
       this.resetData();
+      if (andStart) {
+        this.SET_SHOW_QUE(true);
+      }
     },
 
     stop() {

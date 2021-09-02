@@ -6,7 +6,7 @@
 
 可以下載 youtube 影片的跨平台桌面應用程式
 
-ver 2.2.0
+ver 2.3.0
 
 [載點](https://github.com/7Red4/ytDownloader/releases)
 
@@ -25,6 +25,7 @@ ver 2.2.0
 ## 功能
 
 ### 通用
+
 - [ ] 可以使用設定
 - [ ] 能夠在背景運行
 
@@ -38,7 +39,7 @@ ver 2.2.0
 - [x] 只下載 音/視訊
 - [x] 大量下載
 - [x] 只下載 音/視訊
-- [ ] 可選擇使用 [youtube-dl](https://github.com/ytdl-org/youtube-dl) 的方法下載 
+- [ ] 可選擇使用 [youtube-dl](https://github.com/ytdl-org/youtube-dl) 的方法下載
 - [ ] 可以選定下載片段
 - [ ] 可以設定時間自動錄製直播中節目
 
@@ -50,5 +51,3 @@ ver 2.2.0
 - [ ] 線上儲存歌單
 - [ ] 分享歌單
 - [ ] 自動引入歌單（可在設定調整是否自動）
-
-

@@ -183,7 +183,7 @@ ipcMain.on('stop-que', async (event, queId) => {
   }
 });
 
-ipcMain.on('stop-que', async (event) => {
+ipcMain.on('stop-ques', async (event) => {
   queMap.forEach(({ id, stopProcess }) => {
     try {
       stopProcess();

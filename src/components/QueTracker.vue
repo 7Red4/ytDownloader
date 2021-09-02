@@ -1,65 +1,88 @@
 <template>
   <v-card>
-    <v-card-text>
-      <v-tooltip v-if="!isTitleEditing" left>
-        <template #activator="{ on }">
-          <p v-on="on" @dblclick="isTitleEditing = true" class="primary--text">
-            {{ titleEditValue }}
-          </p>
-        </template>
-        <span>連點標題可編輯</span>
-      </v-tooltip>
-      <v-text-field
-        v-else
-        solo
-        dense
-        fill
-        ref="TitleEdit"
-        :value="titleEditValue"
-        @blur="updateTitle"
-        @keyup.enter="updateTitle"
-        @focus="(e) => e.target.select()"
-      ></v-text-field>
-      <p class="text-caption">{{ Date(tracker.start) }}</p>
-      <template v-if="isLive">
-        <p>
-          <v-icon size="16" color="red">mdi-circle</v-icon>
-          直播中
-        </p>
-      </template>
-      <template v-else>
-        <p class="d-flex" v-if="!tracker.noAudio">
-          <span class="text-no-wrap mr-1">音訊:</span>
-          <v-progress-linear
-            color="cyan"
-            height="25"
-            :value="(tracker.audio.downloaded / tracker.audio.total) * 100"
-          ></v-progress-linear>
-        </p>
-        <p class="d-flex" v-if="!tracker.noVideo">
-          <span class="text-no-wrap mr-1">視訊:</span>
-          <v-progress-linear
-            color="success"
-            height="25"
-            :value="(tracker.video.downloaded / tracker.video.total) * 100"
-          ></v-progress-linear>
-        </p>
-      </template>
-      <p v-if="!tracker.noVideo && !tracker.noAudio">
-        已合併: 影格 {{ tracker.merged.frame }}, 速度
-        {{ tracker.merged.speed }}, fps {{ tracker.merged.fps }}
-      </p>
-      <p>
-        執行狀態:
-        {{ tracker.isRunning || tracker.isRecording ? '執行中' : '閒置' }}
-        <v-progress-circular
-          v-if="tracker.isRunning || tracker.isRecording"
-          size="12"
-          width="3"
-          indeterminate
-          color="primary"
-        ></v-progress-circular>
-      </p>
+    <v-card-text class="d-flex">
+      <v-row no-gutters>
+        <v-col cols="4" class="d-flex align-center">
+          <v-img :aspect-ratio="16 / 9" :src="previewImg">
+            <template #placeholder>
+              <div class="d-flex fill-height">
+                <v-img :aspect-ratio="16 / 9" :src="thumbnail"></v-img>
+              </div>
+            </template>
+          </v-img>
+        </v-col>
+        <v-col cols="8">
+          <div class="ml-2">
+            <v-tooltip v-if="!isTitleEditing" left :disabled="processing">
+              <template #activator="{ on }">
+                <p
+                  v-on="on"
+                  @dblclick="!processing && (isTitleEditing = true)"
+                  class="primary--text"
+                >
+                  {{ titleEditValue }}
+                </p>
+              </template>
+              <span>連點標題可編輯</span>
+            </v-tooltip>
+            <v-text-field
+              v-else
+              solo
+              dense
+              fill
+              ref="TitleEdit"
+              :value="titleEditValue"
+              @blur="updateTitle"
+              @keyup.enter="updateTitle"
+              @focus="(e) => e.target.select()"
+            ></v-text-field>
+            <p class="text-caption">{{ startTime }}</p>
+            <template v-if="isLive">
+              <p>
+                <v-icon size="16" color="red">mdi-circle</v-icon>
+                直播中
+              </p>
+            </template>
+            <template v-else>
+              <p class="d-flex" v-if="!tracker.noAudio">
+                <span class="text-no-wrap mr-1">音訊:</span>
+                <v-progress-linear
+                  color="cyan"
+                  height="25"
+                  :value="
+                    (tracker.audio.downloaded / tracker.audio.total) * 100
+                  "
+                ></v-progress-linear>
+              </p>
+              <p class="d-flex" v-if="!tracker.noVideo">
+                <span class="text-no-wrap mr-1">視訊:</span>
+                <v-progress-linear
+                  color="success"
+                  height="25"
+                  :value="
+                    (tracker.video.downloaded / tracker.video.total) * 100
+                  "
+                ></v-progress-linear>
+              </p>
+            </template>
+            <p v-if="!tracker.noVideo && !tracker.noAudio">
+              已合併: 影格 {{ tracker.merged.frame }}, 速度
+              {{ tracker.merged.speed }}, fps {{ tracker.merged.fps }}
+            </p>
+            <p>
+              執行狀態:
+              {{ tracker.isRunning || tracker.isRecording ? '執行中' : '閒置' }}
+              <v-progress-circular
+                v-if="tracker.isRunning || tracker.isRecording"
+                size="12"
+                width="3"
+                indeterminate
+                color="primary"
+              ></v-progress-circular>
+            </p>
+          </div>
+        </v-col>
+      </v-row>
     </v-card-text>
     <v-card-actions class="d-flex justify-end">
       <v-tooltip bottom>
@@ -131,7 +154,8 @@
 </template>
 
 <script>
-import { ipcRenderer } from 'electron';
+import { ipcRenderer, nativeImage } from 'electron';
+import path from 'path';
 
 export default {
   props: {
@@ -143,7 +167,7 @@ export default {
 
   data() {
     return {
-      Date: Date,
+      startTime: '',
       isTitleEditing: false
     };
   },
@@ -173,6 +197,26 @@ export default {
         this.tracker.audio.downloaded / this.tracker.audio.total === 1 ||
         this.tracker.video.downloaded / this.tracker.video.total === 1
       );
+    },
+    processing() {
+      return this.tracker.isRecording || this.tracker.isRecording;
+    },
+    thumbnail() {
+      return this.tracker.info.videoDetails.thumbnails.length
+        ? this.tracker.info.videoDetails.thumbnails[
+            this.tracker.info.videoDetails.thumbnails.length - 1
+          ].url
+        : '';
+    },
+    previewImg() {
+      const snapshot = path.join(
+        this.tracker.path,
+        `snapshot_${this.tracker.id}.jpg`
+      );
+      const image = nativeImage.createFromPath(snapshot);
+      const url = image.isEmpty() ? null : image.toDataURL();
+
+      return url || this.thumbnail;
     }
   },
 
@@ -194,6 +238,7 @@ export default {
       this.titleEditValue = v.target.value;
     },
     start() {
+      this.startTime = new Date();
       ipcRenderer.send('start-que-by-id', this.tracker.id);
     },
     stop() {

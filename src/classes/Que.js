@@ -55,6 +55,7 @@ export default class Que {
     this.timer = null;
     this.req = req || null;
 
+    this.creatingSnapshot = false;
     this.tracker = new Tracker(id);
     this.proccesser = null;
     this.noVideo = false;
@@ -117,9 +118,37 @@ export default class Que {
     const { url, quality } = req;
 
     if (this.info.videoDetails.isLive) {
-      this.video = ytdl(url).on('progress', (_, downloaded, total) => {
+      const bufferTimeout = 500;
+      let bufferCounter = null;
+
+      const bufferFunction = (fn) => {
+        clearTimeout(bufferCounter);
+        bufferCounter = null;
+
+        bufferCounter = setTimeout(() => {
+          fn && typeof fn === 'function' && fn();
+        }, bufferTimeout);
+      };
+
+      this.video = ytdl(url).on('progress', async (_, downloaded, total) => {
+        const isLive = (await getInfo(url)).videoDetails.isLive;
+
         this.tracker.video = { downloaded, total };
         this.event.reply('download-processing', this.tracker);
+
+        console.log(Date(), isLive);
+        if (!isLive) {
+          bufferFunction(async () => {
+            await this.snapShot();
+            this.stopProcess();
+            this.info.videoDetails.isLive = false;
+          });
+          return;
+        }
+
+        bufferFunction(() => {
+          this.snapShot();
+        });
       });
 
       this.video.pipe(
@@ -130,7 +159,8 @@ export default class Que {
       if (this.noAudio) {
         this.video = ytdl(url, {
           quality: quality.video,
-          filter: 'videoonly'
+          filter: 'videoonly',
+          begin: 0
         }).on('progress', (_, downloaded, total) => {
           this.tracker.video = { downloaded, total };
           if (downloaded === total) {
@@ -143,7 +173,8 @@ export default class Que {
       } else if (this.noVideo) {
         this.audio = ytdl(url, {
           quality: quality.audio,
-          filter: 'audioonly'
+          filter: 'audioonly',
+          begin: 0
         }).on('progress', (_, downloaded, total) => {
           this.tracker.audio = { downloaded, total };
           if (downloaded === total) {
@@ -155,13 +186,15 @@ export default class Que {
         this.slowEmit();
       } else {
         this.audio = ytdl(url, {
-          quality: quality.audio
+          quality: quality.audio,
+          begin: 0
         }).on('progress', (_, downloaded, total) => {
           this.tracker.audio = { downloaded, total };
         });
 
         this.video = ytdl(url, {
-          quality: quality.video
+          quality: quality.video,
+          begin: 0
         }).on('progress', (_, downloaded, total) => {
           this.tracker.video = { downloaded, total };
         });
@@ -194,8 +227,14 @@ export default class Que {
 
   stopProcess() {
     try {
-      if (this.video) this.video.destroy();
-      if (this.audio) this.audio.destroy();
+      if (this.video) {
+        this.video.destroy();
+        this.video = null;
+      }
+      if (this.audio) {
+        this.audio.destroy();
+        this.audio = null;
+      }
       // this.proccesser.kill();
       if (this.info.videoDetails.isLive) {
         this.convert();
@@ -207,7 +246,7 @@ export default class Que {
 
   convert() {
     try {
-      this.proccesser = this.ffmpegProcess([
+      const proccesser = this.ffmpegProcess([
         'pipe:3',
         '-i',
         PATH.join(this.path, `pending_${this.id}.ts`),
@@ -218,15 +257,39 @@ export default class Que {
         `${this.output}.${this.format}`
       ]);
 
-      this.proccesser.on('close', () => {
-        const pendingFile = PATH.join(this.path, `pending_${this.id}.ts`);
+      let deleteTimmer = null;
+      const pendingFile = PATH.join(this.path, `pending_${this.id}.ts`);
+      const snapshot = PATH.join(this.path, `snapshot_${this.id}.jpg`);
+
+      const cleanUp = () => {
+        clearTimeout(deleteTimmer);
+        deleteTimmer = null;
+
+        if (this.creatingSnapshot) {
+          deleteTimmer = setTimeout(() => {
+            cleanUp();
+          }, 700);
+        } else {
+          setTimeout(() => {
+            fs.unlink(pendingFile, (err) => {
+              if (err) consola.error(err);
+            });
+            fs.unlink(snapshot, (err) => {
+              if (err) consola.error(err);
+            });
+          }, 700);
+        }
+      };
+
+      proccesser.on('close', () => {
         try {
-          fs.unlinkSync(pendingFile);
+          cleanUp();
         } catch (error) {
           consola.error('delete error');
           consola.error(error);
+        } finally {
+          this.event.reply('download-complete', this.tracker);
         }
-        this.event.reply('download-complete', this.tracker);
       });
     } catch (error) {
       consola.error(error);
@@ -259,14 +322,14 @@ export default class Que {
       }
     );
 
-    ffmpegProcess.on('close', () => {
+    ffmpegProcess.on('close', (e) => {
       this.tracker.isRunning = false;
       this.tracker.isRecording = false;
 
       this.event.reply('download-complete', this.tracker);
     });
 
-    ffmpegProcess.on('error', () => {
+    ffmpegProcess.on('error', (e) => {
       this.tracker.error = true;
       this.event.reply('download-fail', error);
       this.event.reply('download-processing', this.tracker);
@@ -287,5 +350,44 @@ export default class Que {
     });
 
     return ffmpegProcess;
+  }
+
+  snapShot() {
+    return new Promise((resolve, reject) => {
+      this.creatingSnapshot = true;
+      const pendingFile = PATH.join(this.path, `pending_${this.id}.ts`);
+      const snapshot = PATH.join(this.path, `snapshot_${this.id}.jpg`);
+      if (fs.existsSync(snapshot)) {
+        fs.unlinkSync(snapshot);
+      }
+
+      const snapshotProcess = cp.spawn(ffmpeg, [
+        '-loglevel',
+        '8',
+        '-hide_banner',
+        '-progress',
+        ,
+        '-sseof',
+        '-3',
+        '-i',
+        pendingFile,
+        '-update',
+        '1',
+        '-q:v',
+        '1',
+        snapshot
+      ]);
+
+      snapshotProcess.on('close', (e) => {
+        this.creatingSnapshot = false;
+        console.log('close');
+        this.event.reply('snapshot-update', this.tracker);
+        resolve();
+      });
+
+      snapshotProcess.on('error', (e) => {
+        reject(e);
+      });
+    });
   }
 }
