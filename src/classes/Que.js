@@ -54,6 +54,7 @@ export default class Que {
     this.event = null;
     this.timer = null;
     this.req = req || null;
+    this.cookie = '';
 
     this.creatingSnapshot = false;
     this.tracker = new Tracker(id);
@@ -62,6 +63,15 @@ export default class Que {
     this.noAudio = false;
 
     this.dlMethod = 'ytdl';
+
+    this.defaultYtdlOption = {
+      begin: 0
+      // requestOptions: {
+      //   headers: {
+      //     cookie: ''
+      //   }
+      // }
+    };
   }
 
   setReq(req) {
@@ -85,12 +95,24 @@ export default class Que {
     this.tracker = new Tracker(this.id);
     this.setReq(req);
     this.setEvent(event);
-    const { url, title, path, sourceReq } = req;
+    const { url, title, path, sourceReq, cookie } = req;
     const { noVideo, noAudio } = sourceReq || {};
     this.noVideo = noVideo;
     this.noAudio = noAudio;
     this.tracker.noVideo = noVideo;
     this.tracker.noAudio = noAudio;
+
+    if (cookie) {
+      console.log({ cookie });
+      this.defaultYtdlOption = {
+        ...this.defaultYtdlOption,
+        requestOptions: {
+          headers: {
+            cookie: req.cookie
+          }
+        }
+      };
+    }
 
     this.path = path;
     this.output = PATH.join(this.path, `${filenamify(title)}`);
@@ -130,26 +152,29 @@ export default class Que {
         }, bufferTimeout);
       };
 
-      this.video = ytdl(url).on('progress', async (_, downloaded, total) => {
-        const isLive = (await getInfo(url)).videoDetails.isLive;
+      this.video = ytdl(url, { ...this.defaultYtdlOption }).on(
+        'progress',
+        async (_, downloaded, total) => {
+          const isLive = (await getInfo(url)).videoDetails.isLive;
 
-        this.tracker.video = { downloaded, total };
-        this.event.reply('download-processing', this.tracker);
+          this.tracker.video = { downloaded, total };
+          this.event.reply('download-processing', this.tracker);
 
-        console.log(Date(), isLive);
-        if (!isLive) {
-          bufferFunction(async () => {
-            await this.snapShot();
-            this.stopProcess();
-            this.info.videoDetails.isLive = false;
+          console.log(Date(), isLive);
+          if (!isLive) {
+            bufferFunction(async () => {
+              await this.snapShot();
+              this.stopProcess();
+              this.info.videoDetails.isLive = false;
+            });
+            return;
+          }
+
+          bufferFunction(() => {
+            this.snapShot();
           });
-          return;
         }
-
-        bufferFunction(() => {
-          this.snapShot();
-        });
-      });
+      );
 
       this.video.pipe(
         fs.createWriteStream(PATH.join(this.path, `pending_${this.id}.ts`))
@@ -158,9 +183,9 @@ export default class Que {
     } else {
       if (this.noAudio) {
         this.video = ytdl(url, {
+          ...this.defaultYtdlOption,
           quality: quality.video,
-          filter: 'videoonly',
-          begin: 0
+          filter: 'videoonly'
         }).on('progress', (_, downloaded, total) => {
           this.tracker.video = { downloaded, total };
           if (downloaded === total) {
@@ -172,9 +197,9 @@ export default class Que {
         this.slowEmit();
       } else if (this.noVideo) {
         this.audio = ytdl(url, {
+          ...this.defaultYtdlOption,
           quality: quality.audio,
-          filter: 'audioonly',
-          begin: 0
+          filter: 'audioonly'
         }).on('progress', (_, downloaded, total) => {
           this.tracker.audio = { downloaded, total };
           if (downloaded === total) {
@@ -186,15 +211,15 @@ export default class Que {
         this.slowEmit();
       } else {
         this.audio = ytdl(url, {
-          quality: quality.audio,
-          begin: 0
+          ...this.defaultYtdlOption,
+          quality: quality.audio
         }).on('progress', (_, downloaded, total) => {
           this.tracker.audio = { downloaded, total };
         });
 
         this.video = ytdl(url, {
-          quality: quality.video,
-          begin: 0
+          ...this.defaultYtdlOption,
+          quality: quality.video
         }).on('progress', (_, downloaded, total) => {
           this.tracker.video = { downloaded, total };
         });
@@ -380,7 +405,6 @@ export default class Que {
 
       snapshotProcess.on('close', (e) => {
         this.creatingSnapshot = false;
-        console.log('close');
         this.event.reply('snapshot-update', this.tracker);
         resolve();
       });

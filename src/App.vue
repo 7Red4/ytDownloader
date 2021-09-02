@@ -22,6 +22,11 @@
     </v-system-bar>
 
     <v-app-bar color="primary" class="elevation-0" app clipped-right>
+      <v-btn fab small text @click="isSettingDialog = true">
+        <v-icon>mdi-cog-outline</v-icon>
+      </v-btn>
+
+      <v-spacer></v-spacer>
       <v-tabs color="white" centered>
         <v-tab to="/">
           <span class="text-h6 white--text">
@@ -103,6 +108,7 @@
     </v-navigation-drawer>
 
     <BotSheet :info="getError" />
+    <SettingDialog v-model="isSettingDialog" />
   </v-app>
 </template>
 
@@ -113,13 +119,14 @@ import { mapActions, mapGetters } from 'vuex';
 
 import QueTracker from '@/components/QueTracker';
 import BotSheet from '@/components/BotSheet';
+import SettingDialog from '@/components/SettingDialog';
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
 export default {
   name: 'App',
 
-  components: { QueTracker, BotSheet },
+  components: { QueTracker, BotSheet, SettingDialog },
 
   data() {
     return {
@@ -128,6 +135,7 @@ export default {
       isDrawer: false,
 
       isMenuShow: false,
+      isSettingDialog: false,
       x: 0,
       y: 0
     };

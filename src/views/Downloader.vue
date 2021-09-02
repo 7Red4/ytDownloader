@@ -149,6 +149,11 @@
             </v-list>
           </v-menu>
         </v-form>
+        <v-switch v-model="useCookie" label="使用 cookie"></v-switch>
+        <p class="body-2">
+          提醒:使用 cookie 會影響 yt 的演算法 (會等同你看過)
+          若要下載的影片為公開影片 建議不勾選
+        </p>
 
         <v-card-actions>
           <v-btn color="primary" @click="addQue(true)">加到佇列並開始</v-btn>
@@ -202,7 +207,8 @@ export default {
       sourceReq: {
         noVideo: false,
         noAudio: false
-      }
+      },
+      useCookie: !!this.$db.get('use_cookie').value()
     };
   },
 
@@ -259,6 +265,9 @@ export default {
     },
     path(v) {
       this.$db.set('dl_path', v).write();
+    },
+    useCookie(v) {
+      this.$db.set('use_cookie', v).write();
     }
   },
 
@@ -361,6 +370,7 @@ export default {
 
     addQue(andStart) {
       if (!this.$refs.form.validate()) return;
+      const cookie = this.$db.get('cookie').value();
       ipcRenderer.send(andStart ? 'start-que' : 'add-que', {
         title: this.title,
         url: this.ytUrl,
@@ -374,7 +384,8 @@ export default {
             ? this.vQuality.itag || 'highestvideo'
             : 'highestvideo'
         },
-        sourceReq: this.sourceReq
+        sourceReq: this.sourceReq,
+        cookie: this.useCookie ? cookie : false
       });
       this.snackMsg = '已新增至佇列';
       this.snack = true;
