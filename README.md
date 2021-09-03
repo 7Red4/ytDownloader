@@ -5,6 +5,7 @@
 # YT 下載器
 
 可以下載 youtube 影片的跨平台桌面應用程式
+使用 [ytdl-core]('https://github.com/fent/node-ytdl-core') 作為核心 [ffmpeg]('https://www.ffmpeg.org/') 做影像處理
 
 ver 2.3.2
 
@@ -26,7 +27,7 @@ ver 2.3.2
 
 ### 通用
 
-- [ ] 可以使用設定
+- [x] 可以使用設定
 - [ ] 能夠在背景運行
 
 ### Downloader
