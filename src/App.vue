@@ -182,6 +182,10 @@ export default {
       this.SET_QUE(tracker);
     });
 
+    ipcRenderer.on('start-fail', (event, error) => {
+      this.SET_ERROR(error);
+    });
+
     ipcRenderer.on('download-fail', (event, error) => {
       this.snackMsg = error;
       this.snack = true;
@@ -216,7 +220,13 @@ export default {
   },
 
   methods: {
-    ...mapActions(['TOGGLE_SHOW_QUE', 'SET_SHOW_QUE', 'SET_QUE', 'DELETE_QUE']),
+    ...mapActions([
+      'TOGGLE_SHOW_QUE',
+      'SET_SHOW_QUE',
+      'SET_QUE',
+      'DELETE_QUE',
+      'SET_ERROR'
+    ]),
     handleChangeDark(v) {
       this.$db.set('dark', v).write();
     },

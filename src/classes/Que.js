@@ -1,4 +1,4 @@
-const ytdl = require('ytdl-core');
+import ytdl from 'ytdl-core';
 // Buildin with nodejs
 import cp from 'child_process';
 import os from 'os';
@@ -36,8 +36,8 @@ const youtubeDl = isDevelopment
       os.platform === 'win32' ? 'youtube-dl.exe' : 'youtube-dl'
     );
 
-const getInfo = async (url) => {
-  return await ytdl.getBasicInfo(url);
+const getInfo = async (url, options = {}) => {
+  return await ytdl.getBasicInfo(url, options);
 };
 
 export default class Que {
@@ -45,8 +45,6 @@ export default class Que {
     const id = Date.now();
 
     this.id = id;
-    this.video = null;
-    this.audio = null;
     this.info = null;
     this.path = '';
     this.output = '';
@@ -58,19 +56,25 @@ export default class Que {
 
     this.creatingSnapshot = false;
     this.tracker = new Tracker(id);
-    this.proccesser = null;
     this.noVideo = false;
     this.noAudio = false;
+    this.audioDone = false;
+    this.videoDone = false;
+    this.videoDestoryed = false;
+    this.audioDestoryed = false;
+
+    this.isMerging = false;
+    this.isMerged = false;
 
     this.dlMethod = 'ytdl';
 
     this.defaultYtdlOption = {
-      begin: 0
-      // requestOptions: {
-      //   headers: {
-      //     cookie: ''
-      //   }
-      // }
+      begin: 0,
+      requestOptions: {
+        headers: {
+          cookie: req.cookie || ''
+        }
+      }
     };
   }
 
@@ -103,7 +107,6 @@ export default class Que {
     this.tracker.noAudio = noAudio;
 
     if (cookie) {
-      console.log({ cookie });
       this.defaultYtdlOption = {
         ...this.defaultYtdlOption,
         requestOptions: {
@@ -117,7 +120,7 @@ export default class Que {
     this.path = path;
     this.output = PATH.join(this.path, `${filenamify(title)}`);
 
-    this.info = await getInfo(url);
+    this.info = await getInfo(url, this.defaultYtdlOption);
 
     this.tracker.setInfo({ title, videoInfo: this.info, path });
   }
@@ -134,190 +137,248 @@ export default class Que {
 
   async startProcess({ req = this.req, event }) {
     // reset tracker
-    if (!this.event) await this.setBasicInfo({ req, event });
+    this.video = null;
+    this.audio = null;
+    this.info = null;
+    this.event = null;
+    await this.setBasicInfo({ req, event });
     this.fileCheckAndRename(`${this.output}.${this.format}`);
+
+    const workdir = PATH.join(this.path, '.ytdlWorkingFiles');
+    if (!fs.existsSync(workdir)) {
+      fs.mkdir(workdir, (err) => {
+        if (err) console.error(err);
+      });
+    }
 
     const { url, quality } = req;
 
-    if (this.info.videoDetails.isLive) {
-      const bufferTimeout = 500;
-      let bufferCounter = null;
+    this.audioDone = false;
+    this.videoDone = false;
+    this.videoDestoryed = false;
+    this.audioDestoryed = false;
+    this.isMerged = false;
 
-      const bufferFunction = (fn) => {
-        clearTimeout(bufferCounter);
-        bufferCounter = null;
+    const bufferTimeout = 500;
+    let bufferCounter = null;
 
-        bufferCounter = setTimeout(() => {
-          fn && typeof fn === 'function' && fn();
-        }, bufferTimeout);
+    const bufferFunction = (fn) => {
+      clearTimeout(bufferCounter);
+      bufferCounter = null;
+
+      bufferCounter = setTimeout(() => {
+        fn && typeof fn === 'function' && fn();
+      }, bufferTimeout);
+    };
+
+    const isLiveRecord = this.info.videoDetails.isLive;
+
+    if (this.noAudio) {
+      const video = ytdl(url, {
+        ...this.defaultYtdlOption,
+        quality: quality.video,
+        filter: 'videoonly'
+      }).on('progress', (_, downloaded, total) => {
+        this.tracker.video = { downloaded, total };
+        if (downloaded === total) {
+          this.stopSlowEmit();
+        }
+      });
+
+      video.pipe(fs.createWriteStream(`${this.output}.mp4`));
+      this.slowEmit();
+    } else if (this.noVideo) {
+      const audio = ytdl(url, {
+        ...this.defaultYtdlOption,
+        quality: quality.audio,
+        filter: 'audioonly'
+      }).on('progress', (_, downloaded, total) => {
+        this.tracker.audio = { downloaded, total };
+        if (downloaded === total) {
+          this.stopSlowEmit();
+        }
+      });
+
+      audio.pipe(fs.createWriteStream(`${this.output}.mp3`));
+      this.slowEmit();
+    } else {
+      const checkLiveStatus = async () => {
+        const isLive = (await getInfo(url)).videoDetails.isLive;
+        if (isLiveRecord && !isLive) {
+          await this.snapShot(isLiveRecord);
+          this.stopProcess();
+          this.info.videoDetails.isLive = false;
+        }
       };
 
-      this.video = ytdl(url, { ...this.defaultYtdlOption }).on(
-        'progress',
-        async (_, downloaded, total) => {
-          const isLive = (await getInfo(url)).videoDetails.isLive;
-
-          this.tracker.video = { downloaded, total };
-          this.event.reply('download-processing', this.tracker);
-
-          console.log(Date(), isLive);
-          if (!isLive) {
-            bufferFunction(async () => {
-              await this.snapShot();
-              this.stopProcess();
-              this.info.videoDetails.isLive = false;
-            });
-            return;
-          }
-
-          bufferFunction(() => {
-            this.snapShot();
-          });
+      const onAudioDone = () => {
+        this.audioDone = true;
+        if (this.audioDone && this.videoDone) {
+          this.stopProcess();
         }
-      );
+      };
 
-      this.video.pipe(
-        fs.createWriteStream(PATH.join(this.path, `pending_${this.id}.ts`))
-      );
-      this.tracker.isRecording = true;
-    } else {
-      if (this.noAudio) {
-        this.video = ytdl(url, {
-          ...this.defaultYtdlOption,
-          quality: quality.video,
-          filter: 'videoonly'
-        }).on('progress', (_, downloaded, total) => {
-          this.tracker.video = { downloaded, total };
-          if (downloaded === total) {
-            this.stopSlowEmit();
-          }
-        });
-
-        this.video.pipe(fs.createWriteStream(`${this.output}.mp4`));
-        this.slowEmit();
-      } else if (this.noVideo) {
-        this.audio = ytdl(url, {
-          ...this.defaultYtdlOption,
-          quality: quality.audio,
-          filter: 'audioonly'
-        }).on('progress', (_, downloaded, total) => {
-          this.tracker.audio = { downloaded, total };
-          if (downloaded === total) {
-            this.stopSlowEmit();
-          }
-        });
-
-        this.audio.pipe(fs.createWriteStream(`${this.output}.mp3`));
-        this.slowEmit();
-      } else {
-        this.audio = ytdl(url, {
-          ...this.defaultYtdlOption,
-          quality: quality.audio
-        }).on('progress', (_, downloaded, total) => {
-          this.tracker.audio = { downloaded, total };
-        });
-
-        this.video = ytdl(url, {
-          ...this.defaultYtdlOption,
-          quality: quality.video
-        }).on('progress', (_, downloaded, total) => {
-          this.tracker.video = { downloaded, total };
-        });
-
-        try {
-          this.proccesser = this.ffmpegProcess([
-            'pipe:3',
-            '-i',
-            'pipe:4',
-            '-i',
-            'pipe:5',
-            '-map',
-            '0:a?',
-            '-map',
-            '1:v',
-            '-c:v',
-            'copy',
-            `${this.output}.${this.format}`
-          ]);
-
-          this.audio.pipe(this.proccesser.stdio[4]);
-          this.video.pipe(this.proccesser.stdio[5]);
-        } catch (error) {
-          consola.error(error);
-          this.event.reply('download-fail', error);
+      const onVideoDone = () => {
+        this.videoDone = true;
+        if (this.audioDone && this.videoDone) {
+          this.stopProcess();
         }
+      };
+
+      const audioOption = {
+        ...this.defaultYtdlOption
+      };
+      if (!isLiveRecord) {
+        audioOption.quality = quality.audio;
+        audioOption.filter = 'audioonly';
       }
+      const audio = ytdl(url, audioOption);
+      audio.on('progress', (_, downloaded, total) => {
+        this.tracker.audio = { downloaded, total };
+        if ((!isLiveRecord && downloaded === total) || this.audioDestoryed) {
+          onAudioDone();
+        }
+      });
+      audio.on('error', (e) => {
+        consola.error(e);
+        this.event.reply('start-fail', e);
+        this.stopProcess();
+      });
+      audio.on('end', () => {
+        consola.info('audio end');
+      });
+
+      const video = ytdl(url, {
+        ...this.defaultYtdlOption,
+        quality: quality.video,
+        filter: 'videoonly'
+      });
+      video.on('progress', (_, downloaded, total) => {
+        this.tracker.video = { downloaded, total };
+        checkLiveStatus();
+        bufferFunction(() => {
+          this.snapShot(isLiveRecord);
+        });
+        if ((!isLiveRecord && downloaded === total) || this.videoDestoryed) {
+          onVideoDone();
+        }
+      });
+
+      const pendingVideo = PATH.join(
+        this.path,
+        '.ytdlWorkingFiles',
+        `pending_${this.id}_v.ts`
+      );
+      const pendingAudio = PATH.join(
+        this.path,
+        '.ytdlWorkingFiles',
+        `pending_${this.id}_a.ts`
+      );
+
+      video.pipe(fs.createWriteStream(pendingVideo));
+      audio.pipe(fs.createWriteStream(pendingAudio));
+
+      this.slowEmit();
     }
   }
 
   stopProcess() {
-    try {
-      if (this.video) {
-        this.video.destroy();
-        this.video = null;
-      }
-      if (this.audio) {
-        this.audio.destroy();
-        this.audio = null;
-      }
-      // this.proccesser.kill();
-      if (this.info.videoDetails.isLive) {
-        this.convert();
-      }
-    } catch (error) {
-      console.error(error);
-    }
+    this.videoDestoryed = true;
+    this.audioDestoryed = true;
+    this.merge();
   }
 
-  convert() {
-    try {
-      const proccesser = this.ffmpegProcess([
-        'pipe:3',
-        '-i',
-        PATH.join(this.path, `pending_${this.id}.ts`),
-        '-map',
-        '0',
-        '-c',
-        'copy',
-        `${this.output}.${this.format}`
-      ]);
+  merge() {
+    this.stopSlowEmit();
 
-      let deleteTimmer = null;
-      const pendingFile = PATH.join(this.path, `pending_${this.id}.ts`);
-      const snapshot = PATH.join(this.path, `snapshot_${this.id}.jpg`);
+    if (this.isMerging || this.isMerged) return;
+    this.isMerging = true;
+    this.tracker.isMerging = true;
+    this.event.reply('download-complete', this.tracker);
 
-      const cleanUp = () => {
-        clearTimeout(deleteTimmer);
-        deleteTimmer = null;
+    const pendingVideo = PATH.join(
+      this.path,
+      '.ytdlWorkingFiles',
+      `pending_${this.id}_v.ts`
+    );
+    const pendingAudio = PATH.join(
+      this.path,
+      '.ytdlWorkingFiles',
+      `pending_${this.id}_a.ts`
+    );
 
-        if (this.creatingSnapshot) {
-          deleteTimmer = setTimeout(() => {
-            cleanUp();
-          }, 700);
-        } else {
-          setTimeout(() => {
-            fs.unlink(pendingFile, (err) => {
-              if (err) consola.error(err);
-            });
-            fs.unlink(snapshot, (err) => {
-              if (err) consola.error(err);
-            });
-          }, 700);
-        }
-      };
+    const mergeProcess = cp.spawn(ffmpeg, [
+      '-i',
+      pendingAudio,
+      '-i',
+      pendingVideo,
+      '-map',
+      '0:a?',
+      '-map',
+      '1:v',
+      '-c:v',
+      'copy',
+      `${this.output}.${this.format}`
+    ]);
 
-      proccesser.on('close', () => {
-        try {
-          cleanUp();
-        } catch (error) {
-          consola.error('delete error');
-          consola.error(error);
-        } finally {
-          this.event.reply('download-complete', this.tracker);
-        }
+    mergeProcess.on('close', (e) => {
+      this.tracker.isRunning = false;
+      this.tracker.isRecording = false;
+
+      this.isMerging = false;
+      this.tracker.isMerging = false;
+      this.isMerged = true;
+
+      try {
+        this.cleanUpPendings();
+      } catch (error) {
+        consola.error('delete error');
+        consola.error(error);
+      } finally {
+        this.event.reply('download-complete', this.tracker);
+      }
+    });
+
+    mergeProcess.on('error', (e) => {
+      console.error(e);
+    });
+  }
+
+  cleanUpPendings() {
+    let deleteTimmer = null;
+
+    const pendingVideo = PATH.join(
+      this.path,
+      '.ytdlWorkingFiles',
+      `pending_${this.id}_v.ts`
+    );
+    const pendingAudio = PATH.join(
+      this.path,
+      '.ytdlWorkingFiles',
+      `pending_${this.id}_a.ts`
+    );
+    const snapshot = PATH.join(
+      this.path,
+      '.ytdlWorkingFiles',
+      `snapshot_${this.id}.jpg`
+    );
+
+    if (this.creatingSnapshot) {
+      deleteTimmer = setTimeout(() => {
+        this.cleanUpPendings();
+      }, 700);
+    } else {
+      clearTimeout(deleteTimmer);
+      deleteTimmer = null;
+      fs.unlink(snapshot, (err) => {
+        if (err) consola.info(err);
       });
-    } catch (error) {
-      consola.error(error);
+      fs.unlink(pendingVideo, (err) => {
+        if (err) consola.info(err);
+      });
+      fs.unlink(pendingAudio, (err) => {
+        if (err) consola.info(err);
+      });
     }
   }
 
@@ -327,75 +388,45 @@ export default class Que {
       this.timer = null;
     }
     this.timer = setInterval(() => {
+      this.tracker.isRunning = true;
       this.event.reply('download-processing', this.tracker);
-    }, 200);
+    }, 1000);
   }
 
   stopSlowEmit() {
     clearInterval(this.timer);
     this.timer = null;
+    this.tracker.isRunning = false;
     this.event.reply('download-processing', this.tracker);
   }
 
-  ffmpegProcess(args) {
-    const ffmpegProcess = cp.spawn(
-      ffmpeg,
-      ['-loglevel', '8', '-hide_banner', '-progress', ...args],
-      {
-        windowsHide: true,
-        stdio: ['inherit', 'inherit', 'inherit', 'pipe', 'pipe', 'pipe']
-      }
-    );
-
-    ffmpegProcess.on('close', (e) => {
-      this.tracker.isRunning = false;
-      this.tracker.isRecording = false;
-
-      this.event.reply('download-complete', this.tracker);
-    });
-
-    ffmpegProcess.on('error', (e) => {
-      this.tracker.error = true;
-      this.event.reply('download-fail', error);
-      this.event.reply('download-processing', this.tracker);
-    });
-
-    ffmpegProcess.stdio[3].on('data', (chunk) => {
-      const lines = chunk.toString().trim().split('\n');
-
-      const args = {};
-
-      for (const l of lines) {
-        const [key, value] = l.split('=');
-        args[key.trim()] = value.trim();
-      }
-      this.tracker.merged = args;
-      this.tracker.isRunning = true;
-      this.event.reply('download-processing', this.tracker);
-    });
-
-    return ffmpegProcess;
-  }
-
-  snapShot() {
+  snapShot(isLiveRecord) {
     return new Promise((resolve, reject) => {
       this.creatingSnapshot = true;
-      const pendingFile = PATH.join(this.path, `pending_${this.id}.ts`);
-      const snapshot = PATH.join(this.path, `snapshot_${this.id}.jpg`);
+      const pendingVideo = PATH.join(
+        this.path,
+        '.ytdlWorkingFiles',
+        `pending_${this.id}_v.ts`
+      );
+      const pendingAudio = PATH.join(
+        this.path,
+        '.ytdlWorkingFiles',
+        `pending_${this.id}_a.ts`
+      );
+      const snapshot = PATH.join(
+        this.path,
+        '.ytdlWorkingFiles',
+        `snapshot_${this.id}.jpg`
+      );
       if (fs.existsSync(snapshot)) {
         fs.unlinkSync(snapshot);
       }
 
       const snapshotProcess = cp.spawn(ffmpeg, [
-        '-loglevel',
-        '8',
-        '-hide_banner',
-        '-progress',
-        ,
         '-sseof',
         '-3',
         '-i',
-        pendingFile,
+        isLiveRecord ? pendingAudio : pendingVideo,
         '-update',
         '1',
         '-q:v',

@@ -44,7 +44,7 @@
 
           <p class="grey--text text-body-2 my-1">直播中的影片無法選擇音質</p>
 
-          <div v-show="!isLive" class="d-flex flex-wrap mb-3">
+          <div v-if="!isLive" class="d-flex flex-wrap mb-3">
             <v-checkbox
               label="下載視訊"
               :value="!sourceReq.noVideo"

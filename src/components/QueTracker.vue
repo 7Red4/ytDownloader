@@ -5,8 +5,11 @@
         <v-col cols="4" class="d-flex align-center">
           <v-img :aspect-ratio="16 / 9" :src="previewImg">
             <template #placeholder>
-              <div class="d-flex fill-height">
-                <v-img :aspect-ratio="16 / 9" :src="thumbnail"></v-img>
+              <div class="d-flex fill-height align-center">
+                <v-progress-circular
+                  indeterminate
+                  color="primary"
+                ></v-progress-circular>
               </div>
             </template>
           </v-img>
@@ -65,15 +68,17 @@
                 ></v-progress-linear>
               </p>
             </template>
-            <p v-if="!tracker.noVideo && !tracker.noAudio">
-              已合併: 影格 {{ tracker.merged.frame }}, 速度
-              {{ tracker.merged.speed }}, fps {{ tracker.merged.fps }}
-            </p>
             <p>
               執行狀態:
-              {{ tracker.isRunning || tracker.isRecording ? '執行中' : '閒置' }}
+              {{
+                processing
+                  ? tracker.isMerging
+                    ? '合併中'
+                    : '下載/錄製中'
+                  : '閒置'
+              }}
               <v-progress-circular
-                v-if="tracker.isRunning || tracker.isRecording"
+                v-if="processing"
                 size="12"
                 width="3"
                 indeterminate
@@ -106,7 +111,7 @@
             v-on="on"
             color="error"
             @click="deleteQue"
-            :disabled="tracker.isRunning || tracker.isRecording"
+            :disabled="processing"
             class="mx-2"
           >
             mdi-trash-can
@@ -116,9 +121,15 @@
         <span>從佇列移除</span>
       </v-tooltip>
 
-      <v-tooltip v-if="isLive && tracker.isRecording" bottom>
+      <v-tooltip v-if="processing" bottom>
         <template #activator="{ on }">
-          <v-icon v-on="on" color="error" @click="stop" class="mx-2">
+          <v-icon
+            v-on="on"
+            color="error"
+            @click="stop"
+            class="mx-2"
+            :disabled="tracker.isMerging"
+          >
             mdi-stop
           </v-icon>
         </template>
@@ -126,11 +137,10 @@
         <span>終止</span>
       </v-tooltip>
 
-      <v-tooltip v-if="!tracker.isRecording" bottom>
+      <v-tooltip v-else bottom>
         <template #activator="{ on }">
           <v-icon
             v-on="on"
-            :disabled="!isLive && tracker.isRunning"
             :color="isLive ? 'red' : 'primary'"
             @click="start"
             class="mx-2"
@@ -168,7 +178,8 @@ export default {
   data() {
     return {
       startTime: '',
-      isTitleEditing: false
+      isTitleEditing: false,
+      snapshot: ''
     };
   },
 
@@ -199,7 +210,11 @@ export default {
       );
     },
     processing() {
-      return this.tracker.isRecording || this.tracker.isRecording;
+      return (
+        this.tracker.isRunning ||
+        this.tracker.isRecording ||
+        this.tracker.isMerging
+      );
     },
     thumbnail() {
       return this.tracker.info.videoDetails.thumbnails.length
@@ -209,14 +224,7 @@ export default {
         : '';
     },
     previewImg() {
-      const snapshot = path.join(
-        this.tracker.path,
-        `snapshot_${this.tracker.id}.jpg`
-      );
-      const image = nativeImage.createFromPath(snapshot);
-      const url = image.isEmpty() ? null : image.toDataURL();
-
-      return url || this.thumbnail;
+      return this.snapshot || this.thumbnail;
     }
   },
 
@@ -228,7 +236,23 @@ export default {
           target.focus();
         });
       }
+    },
+    'tracker.timestamp': {
+      handler() {
+        this.snapshotLoading = true;
+        const snapshot = path.join(
+          this.tracker.path,
+          '.ytdlWorkingFiles',
+          `snapshot_${this.tracker.id}.jpg`
+        );
+        const image = nativeImage.createFromPath(snapshot);
+        this.snapshot = image.isEmpty() ? null : image.toDataURL();
+      }
     }
+  },
+
+  mounted() {
+    this.startTime = new Date();
   },
 
   methods: {

@@ -45,6 +45,16 @@ app.on('window-all-closed', () => {
   }
 });
 
+app.on('before-quit', () => {
+  queMap.forEach((que) => {
+    try {
+      que.stopProcess();
+    } catch (error) {
+      consola.error(error);
+    }
+  });
+});
+
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });
@@ -106,7 +116,7 @@ ipcMain.on('pick-path', async (event) => {
 });
 
 ipcMain.on('start-que', async (event, req) => {
-  const que = new Que();
+  const que = new Que(req);
   try {
     await que.startProcess({ req, event });
     queMap.set(que.id, que);
@@ -118,7 +128,7 @@ ipcMain.on('start-que', async (event, req) => {
 });
 
 ipcMain.on('add-que', async (event, req) => {
-  const que = new Que();
+  const que = new Que(req);
   try {
     await que.setBasicInfo({ req, event });
     queMap.set(que.id, que);

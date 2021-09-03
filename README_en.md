@@ -6,7 +6,7 @@
 
 A cross-platform desktop app for downloading youtube videos
 
-ver 2.3.1
+ver 2.3.2
 
 [download](https://github.com/7Red4/ytDownloader/releases)
 
