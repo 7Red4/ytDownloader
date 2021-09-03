@@ -8,6 +8,7 @@ import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer';
 import { getInfo } from './controller/ytdl.js';
 import Que from './classes/Que.js';
 import consola from 'consola';
+import { CookieMap } from 'cookiefile';
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
 const queMap = new Map();
@@ -244,7 +245,7 @@ ipcMain.on('pick-playlist-export-path', async (event, title) => {
   try {
     const path = dialog.showSaveDialogSync({
       defaultPath: title,
-      filters: [{ name: 'Json', extensions: ['.json'] }]
+      filters: [{ name: 'Json', extensions: ['json'] }]
     });
     event.reply('pick-playlist-export-path-reply', path);
   } catch (error) {
@@ -264,4 +265,21 @@ ipcMain.on('export-list', async (event, { exporting, path }) => {
 
 ipcMain.on('show-item-in-folder', (event, path) => {
   shell.openPath(path);
+});
+
+ipcMain.on('choose-cookie-file', (event) => {
+  try {
+    const path = dialog.showOpenDialogSync({
+      filters: [{ name: 'Text', extensions: ['txt'] }]
+    });
+    const cookieFile = new CookieMap(path[0]);
+    let cookieString = '';
+    cookieFile.forEach(({ value }, key) => {
+      if (value) cookieString += `${key}=${value};`;
+    });
+
+    event.reply('choose-cookie-file-reply', cookieString);
+  } catch (error) {
+    consola.error(error);
+  }
 });

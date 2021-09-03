@@ -15,9 +15,16 @@
       </v-card-title>
 
       <v-card-text class="pt-4">
+        <div class="mb-4">
+          <v-btn color="primary" @click="pickCookieFile" class="mr-3">
+            選擇檔案
+          </v-btn>
+          <v-btn color="error" text @click="cookie = ''">刪除 cookie</v-btn>
+        </div>
         <v-textarea
           label="Cookie"
           v-model="cookie"
+          readonly
           auto-grow
           outlined
         ></v-textarea>
@@ -33,6 +40,7 @@
 </template>
 
 <script>
+import { ipcRenderer } from 'electron';
 const schema = {
   cookie: ''
 };
@@ -50,6 +58,12 @@ export default {
     }
   },
 
+  created() {
+    ipcRenderer.on('choose-cookie-file-reply', (event, cookie) => {
+      this.cookie = cookie;
+    });
+  },
+
   methods: {
     init() {
       const cookie = this.$db.get('cookie').value();
@@ -60,9 +74,13 @@ export default {
         this[key] = schema[key];
       });
     },
+    pickCookieFile() {
+      ipcRenderer.send('choose-cookie-file');
+    },
 
     submit() {
       this.$db.set('cookie', this.cookie).write();
+      this.$emit('input', false);
     }
   }
 };

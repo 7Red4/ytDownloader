@@ -16,6 +16,7 @@
   "main": "background.js",
   "dependencies": {
     "app-root-dir": "^1.0.2",
+    "cookiefile": "^1.0.10",
     "core-js": "^3.6.5",
     "filenamify": "^4.3.0",
     "lowdb": "^1.0.0",
