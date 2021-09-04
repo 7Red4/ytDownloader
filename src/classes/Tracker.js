@@ -18,9 +18,9 @@ export default class Tracker {
     this.error = false;
   }
 
-  setInfo({ title, videoInfo, path }) {
-    !!title && (this.title = title);
-    !!videoInfo && (this.info = videoInfo);
-    !!path && (this.path = path);
+  setInfo(payload) {
+    Object.keys(payload).forEach((key) => {
+      this[key] = payload[key];
+    });
   }
 }

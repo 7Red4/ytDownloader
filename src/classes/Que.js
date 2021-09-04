@@ -78,14 +78,6 @@ export default class Que {
     };
   }
 
-  setReq(req) {
-    this.req = req;
-  }
-
-  setEvent(event) {
-    this.event = event;
-  }
-
   updateQue(tracker) {
     const title = filenamify(tracker.title);
     this.tracker.setInfo(tracker);
@@ -97,8 +89,8 @@ export default class Que {
 
   async setBasicInfo({ req = this.req, event }) {
     this.tracker = new Tracker(this.id);
-    this.setReq(req);
-    this.setEvent(event);
+    this.req = req;
+    this.event = event;
     const { url, title, path, sourceReq, cookie } = req;
     const { noVideo, noAudio } = sourceReq || {};
     this.noVideo = noVideo;
@@ -122,7 +114,20 @@ export default class Que {
 
     this.info = await getInfo(url, this.defaultYtdlOption);
 
-    this.tracker.setInfo({ title, videoInfo: this.info, path });
+    const thumbnail = this.info.videoDetails.thumbnails.length
+      ? this.info.videoDetails.thumbnails[
+          this.info.videoDetails.thumbnails.length - 1
+        ].url
+      : '';
+    const isLiveRecord = this.info.videoDetails.isLive;
+
+    this.tracker.setInfo({
+      title,
+      thumbnail,
+      req,
+      isLive: isLiveRecord,
+      path
+    });
   }
 
   fileCheckAndRename(filePath, count = 1) {
@@ -236,6 +241,7 @@ export default class Que {
       audio.on('progress', (_, downloaded, total) => {
         this.tracker.audio = { downloaded, total };
         if ((!isLiveRecord && downloaded === total) || this.audioDestoryed) {
+          audio.destroy();
           onAudioDone();
         }
       });
@@ -243,9 +249,6 @@ export default class Que {
         consola.error(e);
         this.event.reply('start-fail', e);
         this.stopProcess();
-      });
-      audio.on('end', () => {
-        consola.info('audio end');
       });
 
       const video = ytdl(url, {
@@ -260,6 +263,7 @@ export default class Que {
           this.snapShot(isLiveRecord);
         });
         if ((!isLiveRecord && downloaded === total) || this.videoDestoryed) {
+          video.destroy();
           onVideoDone();
         }
       });
@@ -383,10 +387,11 @@ export default class Que {
   }
 
   slowEmit() {
-    if (this.timer) {
+    if (this.timer !== null) {
       clearInterval(this.timer);
       this.timer = null;
     }
+
     this.timer = setInterval(() => {
       this.tracker.isRunning = true;
       this.event.reply('download-processing', this.tracker);

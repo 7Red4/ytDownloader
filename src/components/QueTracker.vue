@@ -185,7 +185,7 @@ export default {
 
   computed: {
     isLive() {
-      return this.tracker.info.videoDetails.isLive;
+      return this.tracker.isLive;
     },
     titleEditValue: {
       get() {
@@ -216,15 +216,8 @@ export default {
         this.tracker.isMerging
       );
     },
-    thumbnail() {
-      return this.tracker.info.videoDetails.thumbnails.length
-        ? this.tracker.info.videoDetails.thumbnails[
-            this.tracker.info.videoDetails.thumbnails.length - 1
-          ].url
-        : '';
-    },
     previewImg() {
-      return this.snapshot || this.thumbnail;
+      return this.snapshot || this.tracker.thumbnail;
     }
   },
 
