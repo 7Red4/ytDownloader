@@ -2,18 +2,32 @@ import fs from 'fs';
 import https from 'https';
 import os from 'os';
 
-import { app, protocol, BrowserWindow, ipcMain, dialog, shell } from 'electron';
+import {
+  app,
+  protocol,
+  BrowserWindow,
+  ipcMain,
+  dialog,
+  shell,
+  Menu,
+  Tray
+} from 'electron';
 import { createProtocol } from 'vue-cli-plugin-electron-builder/lib';
 import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer';
 import { getInfo } from './controller/ytdl.js';
 import Que from './classes/Que.js';
 import consola from 'consola';
 import { CookieMap } from 'cookiefile';
+import PATH from 'path';
+const appRootDir = require('app-root-dir').get();
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
 const queMap = new Map();
 
+const ICON_DIR = PATH.join(appRootDir, 'src', 'assets', 'icons', 'icon.png');
+
 let win = {};
+let tray = null;
 
 protocol.registerSchemesAsPrivileged([
   { scheme: 'app', privileges: { secure: true, standard: true } }
@@ -22,9 +36,10 @@ protocol.registerSchemesAsPrivileged([
 async function createWindow() {
   win = new BrowserWindow({
     frame: false,
-    width: isDevelopment ? 1360 : 810,
+    width: 810,
     height: 960,
     titleBarStyle: 'hidden',
+    icon: ICON_DIR,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false
@@ -42,7 +57,7 @@ async function createWindow() {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
-    app.quit();
+    // app.quit();
   }
 });
 
@@ -60,6 +75,26 @@ app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });
 
+const setUpTray = () => {
+  tray = new Tray(ICON_DIR);
+  const contextMenu = Menu.buildFromTemplate([
+    { type: 'separator' },
+    {
+      label: 'quit',
+      type: 'normal',
+      click: () => {
+        app.quit();
+      }
+    }
+  ]);
+  tray.setToolTip('ytDownloader');
+  tray.setContextMenu(contextMenu);
+
+  tray.on('double-click', () => {
+    win.show();
+  });
+};
+
 app.on('ready', async () => {
   if (isDevelopment && !process.env.IS_TEST) {
     try {
@@ -68,6 +103,9 @@ app.on('ready', async () => {
       consola.error('Vue Devtools failed to install:', e.toString());
     }
   }
+
+  setUpTray();
+
   createWindow();
 });
 
@@ -96,7 +134,7 @@ ipcMain.on('toggle-window', () =>
   win.isMaximized() ? win.unmaximize() : win.maximize()
 );
 ipcMain.on('close-window', () => {
-  process.exit(0);
+  win.hide();
 });
 
 ipcMain.on('get-yt-info', async (event, url) => {
@@ -115,6 +153,8 @@ ipcMain.on('pick-path', async (event) => {
 
   event.reply('pick-path-reply', path);
 });
+
+ipcMain.on('reserve-que', (event, req) => {});
 
 ipcMain.on('start-que', async (event, req) => {
   const que = new Que(req);

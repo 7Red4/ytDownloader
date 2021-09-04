@@ -156,8 +156,16 @@
         </p>
 
         <v-card-actions>
-          <v-btn color="primary" @click="addQue(true)">加到佇列並開始</v-btn>
-          <v-btn color="secondary" @click="addQue(false)">加到佇列</v-btn>
+          <template v-if="videoInfo.videoDetails.isUpcoming">
+            <v-btn color="grey" @click="reserve">
+              <v-icon>mdi-clock-outline</v-icon>
+              預約
+            </v-btn>
+          </template>
+          <template v-else>
+            <v-btn color="primary" @click="addQue(true)">加到佇列並開始</v-btn>
+            <v-btn color="secondary" @click="addQue(false)">加到佇列</v-btn>
+          </template>
         </v-card-actions>
       </template>
     </v-container>
@@ -191,7 +199,7 @@ export default {
 
   data() {
     return {
-      ytUrl: '',
+      ytUrl: 'https://www.youtube.com/watch?v=XQUW_fNc-wU',
       path: this.$db.get('dl_path').value() || '',
       tumbnailPath: '',
       thumbnailURL: '',
@@ -368,10 +376,9 @@ export default {
       ipcRenderer.send('pick-path');
     },
 
-    addQue(andStart) {
-      if (!this.$refs.form.validate()) return;
+    getQueFromData(extraProp = {}) {
       const cookie = this.$db.get('cookie').value();
-      ipcRenderer.send(andStart ? 'start-que' : 'add-que', {
+      return {
         title: this.title,
         url: this.ytUrl,
         path: this.path,
@@ -385,8 +392,26 @@ export default {
             : 'highestvideo'
         },
         sourceReq: this.sourceReq,
-        cookie: this.useCookie ? cookie : false
-      });
+        cookie: this.useCookie ? cookie : false,
+        ...extraProp
+      };
+    },
+
+    reserve() {
+      ipcRenderer.send(
+        'reserve-que',
+        this.getQueFromData({
+          reserveTime: '' // get it from this.videoInfo.videoDetails.liveBroadcastDetails
+        })
+      );
+    },
+
+    addQue(andStart) {
+      if (!this.$refs.form.validate()) return;
+      ipcRenderer.send(
+        andStart ? 'start-que' : 'add-que',
+        this.getQueFromData()
+      );
       this.snackMsg = '已新增至佇列';
       this.snack = true;
       this.resetData();
