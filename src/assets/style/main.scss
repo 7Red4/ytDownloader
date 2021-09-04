@@ -6,17 +6,29 @@ body {
   overflow: hidden;
 }
 
-::-webkit-scrollbar {
-  width: 8px;
+.v-application {
+  *:not(.mdi) {
+    font-family: 'Noto Sans TC', Roboto, sans-serif !important;
+  }
 }
 
-::-webkit-scrollbar-thumb {
-  width: 6px;
-  border-radius: 100px;
+.v-application--wrap {
+  max-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    width: 6px;
+    border-radius: 100px;
+  }
 }
 
 .theme--light {
-  &::-webkit-scrollbar {
+  .v-application--wrap::-webkit-scrollbar {
     background-color: #fafafa;
     &-thumb {
       background-color: #d01d8f;
@@ -25,19 +37,10 @@ body {
 }
 
 .theme--dark {
-  &::-webkit-scrollbar {
+  .v-application--wrap::-webkit-scrollbar {
     background-color: #1e1e1e;
     &-thumb {
       background-color: #007cd6;
     }
-  }
-}
-
-.v-application {
-  max-height: 100vh;
-  overflow-y: auto;
-  overflow-x: hidden;
-  *:not(.mdi) {
-    font-family: 'Noto Sans TC', Roboto, sans-serif !important;
   }
 }

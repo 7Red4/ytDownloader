@@ -12,7 +12,11 @@
         </v-btn>
         <v-btn text @click="toggleWindow">
           <v-icon>
-            mdi-checkbox{{ isMaximized ? '-multiple' : '' }}-blank-outline
+            {{
+              isMaximized
+                ? 'mdi-checkbox-multiple-blank-outline'
+                : 'mdi-checkbox-blank-outline'
+            }}
           </v-icon>
         </v-btn>
         <v-btn text @click="closeWindow">
@@ -57,7 +61,7 @@
       </v-btn>
     </v-app-bar>
 
-    <v-main>
+    <v-main class="overflow-y-auto">
       <transition name="route-change-transition">
         <keep-alive>
           <router-view :key="$route.fullPath"></router-view>
