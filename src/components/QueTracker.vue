@@ -47,24 +47,12 @@
               </p>
             </template>
             <template v-else>
-              <p class="d-flex" v-if="!tracker.noAudio">
-                <span class="text-no-wrap mr-1">音訊:</span>
-                <v-progress-linear
-                  color="cyan"
-                  height="25"
-                  :value="
-                    (tracker.audio.downloaded / tracker.audio.total) * 100
-                  "
-                ></v-progress-linear>
-              </p>
-              <p class="d-flex" v-if="!tracker.noVideo">
-                <span class="text-no-wrap mr-1">視訊:</span>
+              <p>
+                <span class="text-no-wrap mr-1">進度:</span>
                 <v-progress-linear
                   color="success"
                   height="25"
-                  :value="
-                    (tracker.video.downloaded / tracker.video.total) * 100
-                  "
+                  :value="progressPercent"
                 ></v-progress-linear>
               </p>
             </template>
@@ -203,10 +191,18 @@ export default {
         this.editQue({ path: v });
       }
     },
+    progressPercent() {
+      return (
+        (this.tracker.merged.out_time_ms /
+          1000 /
+          1000 /
+          this.tracker.req.duration) *
+        100
+      );
+    },
     downloadComplete() {
       return (
-        this.tracker.audio.downloaded / this.tracker.audio.total === 1 ||
-        this.tracker.video.downloaded / this.tracker.video.total === 1
+        Math.round(this.progressPercent) === 100 || this.tracker.isComplete
       );
     },
     processing() {

@@ -14,7 +14,7 @@ import {
 } from 'electron';
 import { createProtocol } from 'vue-cli-plugin-electron-builder/lib';
 import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer';
-import { getInfo } from './controller/ytdl.js';
+import { getInfo, getFormat } from './controller/ytdl.js';
 import Que from './classes/Que.js';
 import consola from 'consola';
 import { CookieMap } from 'cookiefile';
@@ -129,6 +129,10 @@ ipcMain.on('get-platform', (event) => {
   event.reply('get-platform-reply', platform);
 });
 
+ipcMain.on('get-version', (event) => {
+  event.reply('get-version-reply', app.getVersion());
+});
+
 ipcMain.on('minimize-window', () => win.minimize && win.minimize());
 ipcMain.on('toggle-window', () =>
   win.isMaximized() ? win.unmaximize() : win.maximize()
@@ -141,6 +145,15 @@ ipcMain.on('get-yt-info', async (event, url) => {
   try {
     const info = await getInfo(url);
     event.reply('get-yt-info-reply', info);
+  } catch (error) {
+    consola.error(error);
+  }
+});
+
+ipcMain.on('get-yt-format', async (event, url) => {
+  try {
+    const formats = await getFormat(url);
+    event.reply('get-yt-format-reply', formats);
   } catch (error) {
     consola.error(error);
   }
@@ -312,13 +325,19 @@ ipcMain.on('choose-cookie-file', (event) => {
     const path = dialog.showOpenDialogSync({
       filters: [{ name: 'Text', extensions: ['txt'] }]
     });
+    if (!path) return;
+    const originString = fs.readFileSync(path[0], 'utf8');
     const cookieFile = new CookieMap(path[0]);
     let cookieString = '';
     cookieFile.forEach(({ value }, key) => {
       if (value) cookieString += `${key}=${value};`;
     });
 
-    event.reply('choose-cookie-file-reply', cookieString);
+    event.reply('choose-cookie-file-reply', {
+      filePath: path[0],
+      originString,
+      cookieString
+    });
   } catch (error) {
     consola.error(error);
   }

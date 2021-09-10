@@ -15,6 +15,7 @@ export default class Tracker {
     this.isMerging = false;
     this.isRunning = false;
     this.isRecording = false;
+    this.isComplete = false;
     this.error = false;
   }
 

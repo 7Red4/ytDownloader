@@ -5,7 +5,6 @@
 body {
   overflow: hidden;
 }
-
 .v-application {
   *:not(.mdi) {
     font-family: 'Noto Sans TC', Roboto, sans-serif !important;
@@ -16,19 +15,19 @@ body {
   max-height: 100vh;
   overflow-y: auto;
   overflow-x: hidden;
+}
 
-  &::-webkit-scrollbar {
-    width: 8px;
-  }
+*::-webkit-scrollbar {
+  width: 8px;
+}
 
-  &::-webkit-scrollbar-thumb {
-    width: 6px;
-    border-radius: 100px;
-  }
+*::-webkit-scrollbar-thumb {
+  width: 6px;
+  border-radius: 100px;
 }
 
 .theme--light {
-  .v-application--wrap::-webkit-scrollbar {
+  *::-webkit-scrollbar {
     background-color: #fafafa;
     &-thumb {
       background-color: #d01d8f;
@@ -37,7 +36,7 @@ body {
 }
 
 .theme--dark {
-  .v-application--wrap::-webkit-scrollbar {
+  *::-webkit-scrollbar {
     background-color: #1e1e1e;
     &-thumb {
       background-color: #007cd6;

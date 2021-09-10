@@ -31,7 +31,7 @@
       </v-btn>
 
       <v-spacer></v-spacer>
-      <v-tabs color="white" centered>
+      <v-tabs color="white" centered v-if="false">
         <v-tab to="/">
           <span class="text-h6 white--text">
             <v-icon>mdi-youtube</v-icon>
@@ -64,7 +64,7 @@
     <v-main class="overflow-y-auto">
       <transition name="route-change-transition">
         <keep-alive>
-          <router-view :key="$route.fullPath"></router-view>
+          <router-view :key="$route.fullPath" class="pb-8"></router-view>
         </keep-alive>
       </transition>
     </v-main>
@@ -113,6 +113,16 @@
 
     <BotSheet :info="getError" />
     <SettingDialog v-model="isSettingDialog" />
+
+    <v-card
+      :color="`grey ${$vuetify.theme.dark ? 'darken' : 'lighten'}-3`"
+      flat
+      tile
+      class="bottom_status_bar px-4"
+      height="24"
+    >
+      <span class="grey--text">v{{ version }}</span>
+    </v-card>
   </v-app>
 </template>
 
@@ -135,6 +145,7 @@ export default {
   data() {
     return {
       platform: '',
+      version: '',
       isMaximized: false,
       isDrawer: false,
 
@@ -171,6 +182,10 @@ export default {
     ipcRenderer.send('get-platform');
     ipcRenderer.on('get-platform-reply', (event, platform) => {
       this.platform = platform;
+    });
+    ipcRenderer.send('get-version');
+    ipcRenderer.on('get-version-reply', (event, version) => {
+      this.version = version;
     });
 
     // set tracker event listener
@@ -209,13 +224,13 @@ export default {
 
   mounted() {
     // console.log(this.$db.getState());
-    const isDark = this.$db.get('dark').value();
+    const isDark = !this.$db.get('light').value();
     this.$vuetify.theme.dark = !!isDark;
 
-    const last_route = this.$db.get('last_route').value();
-    if (!!last_route && this.$route.path !== last_route) {
-      this.$router.push(last_route);
-    }
+    // const last_route = this.$db.get('last_route').value();
+    // if (!!last_route && this.$route.path !== last_route) {
+    //   this.$router.push(last_route);
+    // }
 
     this.$store.dispatch(
       'SET_SHUFFLE_STATE',
@@ -232,7 +247,7 @@ export default {
       'SET_ERROR'
     ]),
     handleChangeDark(v) {
-      this.$db.set('dark', v).write();
+      this.$db.set('light', !v).write();
     },
     minimizeWindow() {
       ipcRenderer.send('minimize-window');
@@ -292,5 +307,12 @@ export default {
   position: absolute;
   width: 100%;
   transition: 0.17s;
+}
+
+.bottom_status_bar {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  left: 0;
 }
 </style>

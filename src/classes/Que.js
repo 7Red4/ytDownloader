@@ -1,4 +1,5 @@
 import ytdl from 'ytdl-core';
+import https from 'https';
 // Buildin with nodejs
 import cp from 'child_process';
 import os from 'os';
@@ -66,7 +67,7 @@ export default class Que {
     this.isMerging = false;
     this.isMerged = false;
 
-    this.dlMethod = 'ytdl';
+    this.dlMethod = 'youtube-dl';
 
     this.defaultYtdlOption = {
       begin: 0,
@@ -164,20 +165,6 @@ export default class Que {
     this.audioDestoryed = false;
     this.isMerged = false;
 
-    const bufferTimeout = 500;
-    let bufferCounter = null;
-
-    const bufferFunction = (fn) => {
-      clearTimeout(bufferCounter);
-      bufferCounter = null;
-
-      bufferCounter = setTimeout(() => {
-        fn && typeof fn === 'function' && fn();
-      }, bufferTimeout);
-    };
-
-    const isLiveRecord = this.info.videoDetails.isLive;
-
     if (this.noAudio) {
       const video = ytdl(url, {
         ...this.defaultYtdlOption,
@@ -207,98 +194,95 @@ export default class Que {
       audio.pipe(fs.createWriteStream(`${this.output}.mp3`));
       this.slowEmit();
     } else {
-      const checkLiveStatus = async () => {
-        const isLive = (await getInfo(url)).videoDetails.isLive;
-        if (isLiveRecord && !isLive) {
-          await this.snapShot(isLiveRecord);
-          this.stopProcess();
-          this.info.videoDetails.isLive = false;
-        }
-      };
-
-      const onAudioDone = () => {
-        this.audioDone = true;
-        if (this.audioDone && this.videoDone) {
-          this.stopProcess();
-        }
-      };
-
-      const onVideoDone = () => {
-        this.videoDone = true;
-        if (this.audioDone && this.videoDone) {
-          this.stopProcess();
-        }
-      };
-
-      const audioOption = {
-        ...this.defaultYtdlOption
-      };
-      if (!isLiveRecord) {
-        audioOption.quality = quality.audio;
-        audioOption.filter = 'audioonly';
+      if (this.dlMethod === 'ytdl') {
+        this.ytdlProcess(url, quality);
+      } else if (this.dlMethod === 'youtube-dl') {
+        this.youtubeDlProcess(url, quality);
       }
-      const audio = ytdl(url, audioOption);
-      audio.on('progress', (_, downloaded, total) => {
-        this.tracker.audio = { downloaded, total };
-        if ((!isLiveRecord && downloaded === total) || this.audioDestoryed) {
-          audio.destroy();
-          onAudioDone();
-        }
-      });
-      audio.on('error', (e) => {
-        consola.error(e);
-        this.event.reply('start-fail', e);
-        this.stopProcess();
-      });
-
-      const video = ytdl(url, {
-        ...this.defaultYtdlOption,
-        quality: quality.video,
-        filter: 'videoonly'
-      });
-      video.on('progress', (_, downloaded, total) => {
-        this.tracker.video = { downloaded, total };
-        checkLiveStatus();
-        bufferFunction(() => {
-          this.snapShot(isLiveRecord);
-        });
-        if ((!isLiveRecord && downloaded === total) || this.videoDestoryed) {
-          video.destroy();
-          onVideoDone();
-        }
-      });
-
-      const pendingVideo = PATH.join(
-        this.path,
-        '.ytdlWorkingFiles',
-        `pending_${this.id}_v.ts`
-      );
-      const pendingAudio = PATH.join(
-        this.path,
-        '.ytdlWorkingFiles',
-        `pending_${this.id}_a.ts`
-      );
-
-      video.pipe(fs.createWriteStream(pendingVideo));
-      audio.pipe(fs.createWriteStream(pendingAudio));
-
-      this.slowEmit();
     }
   }
 
-  stopProcess() {
-    this.videoDestoryed = true;
-    this.audioDestoryed = true;
-    this.merge();
-  }
+  ytdlProcess(url, quality) {
+    const bufferTimeout = 500;
+    let bufferCounter = null;
 
-  merge() {
-    this.stopSlowEmit();
+    const bufferFunction = (fn) => {
+      clearTimeout(bufferCounter);
+      bufferCounter = null;
 
-    if (this.isMerging || this.isMerged) return;
-    this.isMerging = true;
-    this.tracker.isMerging = true;
-    this.event.reply('download-complete', this.tracker);
+      bufferCounter = setTimeout(() => {
+        fn && typeof fn === 'function' && fn();
+      }, bufferTimeout);
+    };
+
+    const isLiveRecord = this.info.videoDetails.isLive;
+
+    const checkLiveStatus = async () => {
+      const isLive = (await getInfo(url)).videoDetails.isLive;
+      if (isLiveRecord && !isLive) {
+        await this.snapShot(isLiveRecord);
+        this.stopProcess();
+        this.info.videoDetails.isLive = false;
+      }
+    };
+
+    const onAudioDone = () => {
+      this.audioDone = true;
+      if (this.audioDone && this.videoDone) {
+        this.stopProcess();
+      }
+    };
+
+    const onVideoDone = () => {
+      this.videoDone = true;
+      if (this.audioDone && this.videoDone) {
+        this.stopProcess();
+      }
+    };
+
+    const audioOption = {
+      ...this.defaultYtdlOption
+    };
+    if (!isLiveRecord) {
+      audioOption.quality = quality.audio;
+      audioOption.filter = 'audioonly';
+    }
+    const audio = ytdl(url, audioOption);
+    audio.on('progress', (_, downloaded, total) => {
+      this.tracker.audio = { downloaded, total };
+      if ((!isLiveRecord && downloaded === total) || this.audioDestoryed) {
+        audio.destroy();
+        onAudioDone();
+      }
+    });
+    audio.once('response', () => {
+      // starttime = Date.now();
+    });
+    audio.on('error', (e) => {
+      consola.error(e);
+      this.event.reply('start-fail', e);
+      this.stopProcess();
+    });
+
+    const video = ytdl(url, {
+      ...this.defaultYtdlOption,
+      quality: quality.video,
+      filter: 'videoonly'
+    });
+    video.once('response', (e) => {
+      console.log(e);
+    });
+    video.on('progress', (_, downloaded, total) => {
+      this.tracker.video = { downloaded, total };
+      checkLiveStatus();
+      bufferFunction(() => {
+        this.snapShot(isLiveRecord);
+      });
+      if ((!isLiveRecord && downloaded === total) || this.videoDestoryed) {
+        video.destroy();
+        onVideoDone();
+      }
+    });
 
     const pendingVideo = PATH.join(
       this.path,
@@ -311,41 +295,131 @@ export default class Que {
       `pending_${this.id}_a.ts`
     );
 
-    const mergeProcess = cp.spawn(ffmpeg, [
-      '-i',
-      pendingAudio,
-      '-i',
-      pendingVideo,
-      '-map',
-      '0:a?',
-      '-map',
-      '1:v',
-      '-c:v',
-      'copy',
-      `${this.output}.${this.format}`
-    ]);
+    video.pipe(fs.createWriteStream(pendingVideo));
+    audio.pipe(fs.createWriteStream(pendingAudio));
 
-    mergeProcess.on('close', (e) => {
-      this.tracker.isRunning = false;
-      this.tracker.isRecording = false;
+    this.slowEmit();
+  }
 
-      this.isMerging = false;
-      this.tracker.isMerging = false;
-      this.isMerged = true;
+  async youtubeDlProcess(url, quality) {
+    this.tracker.isRunning = true;
+    this.tracker.isComplete = false;
+    this.event.reply('download-processing', this.tracker);
 
-      try {
-        this.cleanUpPendings();
-      } catch (error) {
-        consola.error('delete error');
-        consola.error(error);
-      } finally {
-        this.event.reply('download-complete', this.tracker);
-      }
-    });
+    const getVideoM3u8 = () =>
+      new Promise((resolve, reject) => {
+        try {
+          const getm3u8 = cp.spawn(youtubeDl, ['-f', quality.video, '-g', url]);
+          let m3u8Url = '';
+          getm3u8.stdout.on('data', (data) => {
+            data = data.toString();
+            m3u8Url += data;
+          });
 
-    mergeProcess.on('error', (e) => {
-      console.error(e);
-    });
+          getm3u8.on('close', () => {
+            resolve(m3u8Url.replace(/\s\s+/g, ''));
+          });
+        } catch (err) {
+          consola.error(err);
+          reject(err);
+        }
+      });
+
+    const getAudioM3u8 = () =>
+      new Promise((resolve, reject) => {
+        try {
+          const getm3u8 = cp.spawn(youtubeDl, ['-f', quality.audio, '-g', url]);
+          let m3u8Url = '';
+          getm3u8.stdout.on('data', (data) => {
+            data = data.toString();
+            m3u8Url += data;
+          });
+
+          getm3u8.on('close', () => {
+            resolve(m3u8Url.replace(/\s\s+/g, ''));
+          });
+        } catch (err) {
+          consola.error(err);
+          reject(err);
+        }
+      });
+
+    try {
+      let videoM3u8Url = await getVideoM3u8();
+      let audioM3u8Url = await getAudioM3u8();
+
+      const ffmpegProcess = cp.spawn(
+        ffmpeg,
+        [
+          '-loglevel',
+          '8',
+          '-hide_banner',
+          '-progress',
+          'pipe:3',
+          '-i',
+          audioM3u8Url,
+          '-i',
+          videoM3u8Url,
+          '-map',
+          '0:a?',
+          '-map',
+          '1:v',
+          '-c:v',
+          'copy',
+          `${this.output}.${this.format}`
+        ],
+        {
+          windowsHide: true,
+          stdio: ['inherit', 'inherit', 'inherit', 'pipe', 'pipe', 'pipe']
+        }
+      );
+
+      ffmpegProcess.stdio[3].on('data', (chunk) => {
+        const lines = chunk.toString().trim().split('\n');
+
+        const args = {};
+
+        for (const l of lines) {
+          const [key, value] = l.split('=');
+          args[key.trim()] = value.trim();
+        }
+
+        this.tracker.merged = args;
+        this.event.reply('download-processing', this.tracker);
+      });
+
+      ffmpegProcess.on('close', (e) => {
+        this.tracker.isRunning = false;
+        this.tracker.isRecording = false;
+
+        this.isMerging = false;
+        this.tracker.isMerging = false;
+        this.isMerged = true;
+
+        try {
+          this.cleanUpPendings();
+        } catch (error) {
+          consola.error('delete error');
+          consola.error(error);
+        } finally {
+          this.tracker.isComplete = true;
+          this.event.reply('download-complete', this.tracker);
+        }
+      });
+
+      ffmpegProcess.on('error', (e) => {
+        consola.error(e);
+      });
+    } catch (e) {
+      this.event.reply('start-fail', e);
+      consola.error(e);
+    }
+  }
+
+  stopProcess() {
+    this.videoDestoryed = true;
+    this.audioDestoryed = true;
+    this.merge();
   }
 
   cleanUpPendings() {
