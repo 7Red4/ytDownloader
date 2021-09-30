@@ -29,6 +29,9 @@
       <v-btn fab small text @click="isSettingDialog = true">
         <v-icon>mdi-cog-outline</v-icon>
       </v-btn>
+      <v-btn fab small text @click="isHelpDialog = true">
+        <v-icon>mdi-help-circle-outline</v-icon>
+      </v-btn>
 
       <v-spacer></v-spacer>
       <v-tabs color="white" centered v-if="false">
@@ -113,6 +116,7 @@
 
     <BotSheet :info="getError" />
     <SettingDialog v-model="isSettingDialog" />
+    <HelpDialog v-model="isHelpDialog" />
 
     <v-card
       :color="`grey ${$vuetify.theme.dark ? 'darken' : 'lighten'}-3`"
@@ -134,13 +138,14 @@ import { mapActions, mapGetters } from 'vuex';
 import QueTracker from '@/components/QueTracker';
 import BotSheet from '@/components/BotSheet';
 import SettingDialog from '@/components/SettingDialog';
+import HelpDialog from '@/components/HelpDialog';
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
 export default {
   name: 'App',
 
-  components: { QueTracker, BotSheet, SettingDialog },
+  components: { QueTracker, BotSheet, SettingDialog, HelpDialog },
 
   data() {
     return {
@@ -151,6 +156,7 @@ export default {
 
       isMenuShow: false,
       isSettingDialog: false,
+      isHelpDialog: false,
       x: 0,
       y: 0
     };

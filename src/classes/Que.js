@@ -337,6 +337,7 @@ export default class Que {
   }
 
   async youtubeDlProcess(url, quality) {
+    // TODO: need can access cookie
     this.tracker.isRunning = true;
 
     this.tracker.isComplete = false;
