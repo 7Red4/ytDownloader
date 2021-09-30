@@ -24,7 +24,6 @@ const ffmpeg = isDevelopment
     )
   : PATH.join(appRootDir, os.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg');
 
-// TODO: find out how to pipe video & audio into ffmpeg
 const youtubeDl = isDevelopment
   ? PATH.join(
       appRootDir,
@@ -64,10 +63,12 @@ export default class Que {
     this.videoDestoryed = false;
     this.audioDestoryed = false;
 
+    this.isVideoSourceFailed = false;
+
     this.isMerging = false;
     this.isMerged = false;
 
-    this.dlMethod = 'youtube-dl';
+    this.dlMethod = 'ytdl';
 
     this.defaultYtdlOption = {
       begin: 0,
@@ -92,8 +93,9 @@ export default class Que {
     this.tracker = new Tracker(this.id);
     this.req = req;
     this.event = event;
-    const { url, title, path, sourceReq, cookie } = req;
+    const { url, title, path, sourceReq, cookie, dlMethod } = req;
     const { noVideo, noAudio } = sourceReq || {};
+    this.dlMethod = dlMethod;
     this.noVideo = noVideo;
     this.noAudio = noAudio;
     this.tracker.noVideo = noVideo;
@@ -120,14 +122,17 @@ export default class Que {
           this.info.videoDetails.thumbnails.length - 1
         ].url
       : '';
-    const isLiveRecord = this.info.videoDetails.isLive;
+    const isLiveRecord =
+      this.info.videoDetails.liveBroadcastDetails &&
+      this.info.videoDetails.liveBroadcastDetails.isLiveNow;
 
     this.tracker.setInfo({
       title,
       thumbnail,
       req,
       isLive: isLiveRecord,
-      path
+      path,
+      dlMethod
     });
   }
 
@@ -215,10 +220,15 @@ export default class Que {
       }, bufferTimeout);
     };
 
-    const isLiveRecord = this.info.videoDetails.isLive;
+    const isLiveRecord =
+      this.info.videoDetails.liveBroadcastDetails &&
+      this.info.videoDetails.liveBroadcastDetails.isLiveNow;
 
     const checkLiveStatus = async () => {
-      const isLive = (await getInfo(url)).videoDetails.isLive;
+      const liveBroadcastDetails = (await getInfo(url)).videoDetails
+        .liveBroadcastDetails;
+      const isLive = liveBroadcastDetails && liveBroadcastDetails.isLiveNow;
+      consola.info(`isLive: ${isLive}`);
       if (isLiveRecord && !isLive) {
         await this.snapShot(isLiveRecord);
         this.stopProcess();
@@ -247,43 +257,68 @@ export default class Que {
       audioOption.quality = quality.audio;
       audioOption.filter = 'audioonly';
     }
-    const audio = ytdl(url, audioOption);
-    audio.on('progress', (_, downloaded, total) => {
-      this.tracker.audio = { downloaded, total };
-      if ((!isLiveRecord && downloaded === total) || this.audioDestoryed) {
-        audio.destroy();
+    const audio = ytdl(url, audioOption)
+      .once('response', () => {
+        // starttime = Date.now();
+      })
+      .on('progress', (_, downloaded, total) => {
+        this.tracker.audio = { downloaded, total };
+        consola.info(
+          `prcess: 'audio', downloaded: ${downloaded}, total: ${total}`
+        );
+        bufferFunction(() => {
+          this.snapShot(isLiveRecord);
+        });
+
+        if ((!isLiveRecord && downloaded === total) || this.audioDestoryed) {
+          audio.destroy();
+          onAudioDone();
+        }
+      })
+      .on('error', (e) => {
+        consola.error(e);
+        this.event.reply('start-fail', e);
+        this.stopProcess();
+      })
+      .on('end', (e) => {
+        consola.error('audio end');
+        consola.warn(e);
         onAudioDone();
-      }
-    });
-    audio.once('response', () => {
-      // starttime = Date.now();
-    });
-    audio.on('error', (e) => {
-      consola.error(e);
-      this.event.reply('start-fail', e);
-      this.stopProcess();
-    });
+      });
 
     const video = ytdl(url, {
       ...this.defaultYtdlOption,
-      quality: quality.video,
+      quality: quality.video || 'highestvideo',
       filter: 'videoonly'
-    });
-    video.once('response', (e) => {
-      console.log(e);
-    });
-    video.on('progress', (_, downloaded, total) => {
-      this.tracker.video = { downloaded, total };
-      checkLiveStatus();
-      bufferFunction(() => {
-        this.snapShot(isLiveRecord);
-      });
-      if ((!isLiveRecord && downloaded === total) || this.videoDestoryed) {
-        video.destroy();
-        onVideoDone();
-      }
-    });
+    })
+      .once('response', (e) => {
+        // consola.info(e);
+      })
+      .on('progress', (_, downloaded, total) => {
+        this.tracker.video = { downloaded, total };
+        if (isNaN(total)) {
+          this.isVideoSourceFailed = true;
+          this.tracker.isVideoSourceFailed = true;
+        }
+        consola.info(
+          `prcess: 'video', downloaded: ${downloaded}, total: ${total}`
+        );
 
+        if (isLiveRecord) {
+          checkLiveStatus();
+        }
+        if ((!isLiveRecord && downloaded === total) || this.videoDestoryed) {
+          video.destroy();
+          onVideoDone();
+        }
+      })
+      .on('end', (e) => {
+        consola.error('video end');
+        consola.warn(e);
+        onVideoDone();
+      });
+
+    // this.pipeVandA(video, audio, true);
     const pendingVideo = PATH.join(
       this.path,
       '.ytdlWorkingFiles',
@@ -303,6 +338,7 @@ export default class Que {
 
   async youtubeDlProcess(url, quality) {
     this.tracker.isRunning = true;
+
     this.tracker.isComplete = false;
     this.event.reply('download-processing', this.tracker);
 
@@ -348,18 +384,104 @@ export default class Que {
       let videoM3u8Url = await getVideoM3u8();
       let audioM3u8Url = await getAudioM3u8();
 
-      const ffmpegProcess = cp.spawn(
-        ffmpeg,
-        [
-          '-loglevel',
-          '8',
-          '-hide_banner',
-          '-progress',
-          'pipe:3',
+      this.youtubeDlPipeVandA(videoM3u8Url, audioM3u8Url);
+    } catch (e) {
+      this.event.reply('start-fail', e);
+      consola.error(e);
+    }
+  }
+
+  youtubeDlPipeVandA(video, audio) {
+    const ffmpegProcess = cp.spawn(
+      ffmpeg,
+      [
+        '-loglevel',
+        '8',
+        '-hide_banner',
+        '-progress',
+        'pipe:3',
+        '-i',
+        audio,
+        '-i',
+        video,
+        '-map',
+        '0:a?',
+        '-map',
+        '1:v',
+        '-c:v',
+        'copy',
+        `${this.output}.${this.format}`
+      ],
+      {
+        windowsHide: true,
+        stdio: ['inherit', 'inherit', 'inherit', 'pipe', 'pipe', 'pipe']
+      }
+    );
+
+    ffmpegProcess.stdio[3].on('data', (chunk) => {
+      if (this.videoDestoryed || this.audioDestoryed) {
+        ffmpegProcess.kill('SIGINT');
+      }
+      const lines = chunk.toString().trim().split('\n');
+
+      const args = {};
+
+      for (const l of lines) {
+        const [key, value] = l.split('=');
+        args[key.trim()] = value.trim();
+      }
+
+      this.tracker.merged = args;
+      this.event.reply('download-processing', this.tracker);
+    });
+
+    ffmpegProcess.on('close', (e) => {
+      this.tracker.isRunning = false;
+      this.tracker.isRecording = false;
+
+      this.isMerging = false;
+      this.tracker.isMerging = false;
+      this.isMerged = true;
+
+      try {
+        this.cleanUpPendings();
+      } catch (error) {
+        consola.error('delete error');
+        consola.error(error);
+      } finally {
+        this.tracker.isComplete = true;
+        this.event.reply('download-complete', this.tracker);
+      }
+    });
+
+    ffmpegProcess.on('error', (e) => {
+      consola.error(e);
+    });
+  }
+
+  merge() {
+    if (this.isMerging || this.isMerged) return;
+    this.isMerging = true;
+    this.tracker.isMerging = true;
+
+    const pendingVideo = PATH.join(
+      this.path,
+      '.ytdlWorkingFiles',
+      `pending_${this.id}_v.ts`
+    );
+    const pendingAudio = PATH.join(
+      this.path,
+      '.ytdlWorkingFiles',
+      `pending_${this.id}_a.ts`
+    );
+
+    const args = this.isVideoSourceFailed
+      ? ['-i', pendingAudio, `${this.output}.${this.format}`]
+      : [
           '-i',
-          audioM3u8Url,
+          pendingAudio,
           '-i',
-          videoM3u8Url,
+          pendingVideo,
           '-map',
           '0:a?',
           '-map',
@@ -367,59 +489,64 @@ export default class Que {
           '-c:v',
           'copy',
           `${this.output}.${this.format}`
-        ],
-        {
-          windowsHide: true,
-          stdio: ['inherit', 'inherit', 'inherit', 'pipe', 'pipe', 'pipe']
-        }
-      );
+        ];
 
-      ffmpegProcess.stdio[3].on('data', (chunk) => {
-        const lines = chunk.toString().trim().split('\n');
+    const mergeProcess = cp.spawn(
+      ffmpeg,
+      ['-loglevel', '8', '-hide_banner', '-progress', 'pipe:3', ...args],
+      {
+        windowsHide: true,
+        stdio: ['inherit', 'inherit', 'inherit', 'pipe', 'pipe', 'pipe']
+      }
+    );
 
-        const args = {};
+    mergeProcess.stdio[3].on('data', (chunk) => {
+      const lines = chunk.toString().trim().split('\n');
 
-        for (const l of lines) {
-          const [key, value] = l.split('=');
-          args[key.trim()] = value.trim();
-        }
+      const args = {};
 
-        this.tracker.merged = args;
-        this.event.reply('download-processing', this.tracker);
-      });
+      for (const l of lines) {
+        const [key, value] = l.split('=');
+        args[key.trim()] = value.trim();
+      }
 
-      ffmpegProcess.on('close', (e) => {
-        this.tracker.isRunning = false;
-        this.tracker.isRecording = false;
+      this.tracker.merged = args;
+      this.event.reply('download-processing', this.tracker);
+      consola.info(lines.join(', '));
+    });
 
-        this.isMerging = false;
-        this.tracker.isMerging = false;
-        this.isMerged = true;
+    mergeProcess.on('close', (e) => {
+      this.tracker.isRunning = false;
+      this.tracker.isRecording = false;
 
-        try {
-          this.cleanUpPendings();
-        } catch (error) {
-          consola.error('delete error');
-          consola.error(error);
-        } finally {
-          this.tracker.isComplete = true;
-          this.event.reply('download-complete', this.tracker);
-        }
-      });
+      this.isMerging = false;
+      this.tracker.isMerging = false;
+      this.tracker.isComplete = true;
+      this.isMerged = true;
 
-      ffmpegProcess.on('error', (e) => {
-        consola.error(e);
-      });
-    } catch (e) {
-      this.event.reply('start-fail', e);
-      consola.error(e);
-    }
+      this.stopSlowEmit();
+
+      try {
+        this.cleanUpPendings();
+      } catch (error) {
+        consola.error('delete error');
+        consola.error(error);
+      } finally {
+        this.event.reply('download-complete', this.tracker);
+      }
+    });
+
+    mergeProcess.on('error', (e) => {
+      console.error(e);
+    });
   }
 
   stopProcess() {
     this.videoDestoryed = true;
     this.audioDestoryed = true;
-    this.merge();
+    if (this.dlMethod === 'ytdl') {
+      this.merge();
+    }
   }
 
   cleanUpPendings() {

@@ -167,7 +167,9 @@ ipcMain.on('pick-path', async (event) => {
   event.reply('pick-path-reply', path);
 });
 
-ipcMain.on('reserve-que', (event, req) => {});
+ipcMain.on('reserve-que', (event, req) => {
+  //
+});
 
 ipcMain.on('start-que', async (event, req) => {
   const que = new Que(req);

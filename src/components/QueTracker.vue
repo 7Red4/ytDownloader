@@ -44,16 +44,71 @@
               <p>
                 <v-icon size="16" color="red">mdi-circle</v-icon>
                 直播中
+                <span
+                  v-if="tracker.isVideoSourceFailed"
+                  class="hint_text grey--text"
+                >
+                  高畫質影像獲取失敗 將獲取 720p 片源
+                </span>
               </p>
             </template>
-            <template v-else>
-              <p>
+            <template
+              v-if="
+                !isLive && tracker.dlMethod === 'ytdl' && !tracker.isMerging
+              "
+            >
+              <p class="mb-1">
+                <span class="text-no-wrap mr-1">音訊:</span>
+                <v-progress-linear
+                  color="cyan"
+                  height="25"
+                  :value="
+                    (tracker.audio.downloaded / tracker.audio.total) * 100
+                  "
+                >
+                  <template #default="{ value }">
+                    {{ Number.parseFloat(value).toFixed(2) }}%
+                  </template>
+                </v-progress-linear>
+              </p>
+              <p class="mb-1">
+                <span class="text-no-wrap mr-1">視訊:</span>
+                <v-progress-linear
+                  color="pink"
+                  height="25"
+                  :value="
+                    (tracker.video.downloaded / tracker.video.total) * 100
+                  "
+                >
+                  <template #default="{ value }">
+                    {{ Number.parseFloat(value).toFixed(2) }}%
+                  </template>
+                </v-progress-linear>
+              </p>
+            </template>
+            <template
+              v-if="
+                tracker.dlMethod === 'youtube-dl' ||
+                tracker.isMerging ||
+                downloadComplete
+              "
+            >
+              <p class="mb-1">
                 <span class="text-no-wrap mr-1">進度:</span>
                 <v-progress-linear
                   color="success"
                   height="25"
-                  :value="progressPercent"
-                ></v-progress-linear>
+                  :value="downloadComplete ? 100 : progressPercent"
+                >
+                  <template #default="{ value }">
+                    <span v-if="value === Infinity">
+                      時間長度: {{ tracker.merged.out_time }}
+                    </span>
+                    <span v-else>
+                      {{ Number.parseFloat(value).toFixed(2) }}%
+                    </span>
+                  </template>
+                </v-progress-linear>
               </p>
             </template>
             <p>
@@ -165,6 +220,7 @@ export default {
 
   data() {
     return {
+      Infinity: Infinity,
       startTime: '',
       isTitleEditing: false,
       snapshot: ''
@@ -180,7 +236,7 @@ export default {
         return this.tracker.title;
       },
       set(v) {
-        this.editQue({ title: v });
+        this.editQue({ title: v, path: this.tracker.path });
       }
     },
     titlePathValue: {
@@ -188,7 +244,7 @@ export default {
         return this.tracker.title;
       },
       set(v) {
-        this.editQue({ path: v });
+        this.editQue({ title: this.tracker.title, path: v });
       }
     },
     progressPercent() {
@@ -270,4 +326,8 @@ export default {
 };
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.hint_text {
+  font-size: 11px;
+}
+</style>

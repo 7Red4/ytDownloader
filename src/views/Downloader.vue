@@ -42,9 +42,15 @@
             outlined
           ></v-text-field>
 
-          <p class="grey--text text-body-2 my-1">直播中的影片無法選擇音質</p>
+          <p class="grey--text text-body-2 my-1">
+            {{
+              videoInfo.videoDetails.isUpcoming
+                ? '預約直播 畫/音質 預設皆為最高'
+                : '直播中的影片無法選擇音質'
+            }}
+          </p>
 
-          <div v-if="!isLive" class="d-flex flex-wrap mb-3">
+          <div v-if="!recordContent" class="d-flex flex-wrap mb-3">
             <v-checkbox
               label="下載視訊"
               :value="!sourceReq.noVideo"
@@ -61,17 +67,20 @@
               @change="(v) => (sourceReq.noAudio = !v)"
             ></v-checkbox>
           </div>
+          <SizeBox v-else height="24" />
 
           <v-row>
             <v-col cols="auto">
               <v-select
-                v-show="!isLive"
                 :items="[
+                  { text: 'ytdl', value: 'ytdl' },
                   {
-                    text: 'youtube-dl',
-                    value: 'youtube-dl'
-                  },
-                  { text: 'ytdl 重製中', value: 'ytdl', disabled: true }
+                    text: `youtube-dl ${
+                      recordContent ? '目前錄影只使用 ytdl' : ''
+                    }`,
+                    value: 'youtube-dl',
+                    disabled: recordContent
+                  }
                 ]"
                 v-model="dlMethod"
                 label="下載方式"
@@ -81,7 +90,10 @@
             </v-col>
           </v-row>
 
-          <Async :loading="fetchingFormats">
+          <Async
+            v-if="!videoInfo.videoDetails.isUpcoming"
+            :loading="dlMethod === 'youtube-dl' && fetchingFormats"
+          >
             <v-menu max-height="400">
               <template #activator="{ on }">
                 <v-text-field
@@ -187,11 +199,11 @@ export default {
 
   data() {
     return {
-      ytUrl: 'https://www.youtube.com/watch?v=GZ5-N_0pjKs',
+      ytUrl: '',
       path: this.$db.get('dl_path').value() || '',
       tumbnailPath: '',
       thumbnailURL: '',
-      dlMethod: 'youtube-dl',
+      dlMethod: 'ytdl',
       title: '',
       loading: false,
       snack: false,
@@ -213,6 +225,57 @@ export default {
   computed: {
     ...mapGetters(['getQueList', 'getQueById']),
     vQualities() {
+      if (this.dlMethod === 'youtube-dl') {
+        return this.youtubeDlVQualities;
+      } else if (this.dlMethod === 'ytdl') {
+        return this.ytdlVQualities;
+      } else {
+        return [];
+      }
+    },
+    aQualities() {
+      if (this.dlMethod === 'youtube-dl') {
+        return this.youtubeDlAQualities;
+      } else if (this.dlMethod === 'ytdl') {
+        return this.ytdlAQualities;
+      } else {
+        return [];
+      }
+    },
+
+    ytdlVQualities() {
+      return this.videoInfo
+        ? this.videoInfo.formats
+            .filter(
+              ({ mimeType }) =>
+                /video/.test(mimeType) && !/av01/g.test(mimeType)
+            )
+            .sort((a, b) =>
+              Number(a.qualityLabel.replace('p', '')) <
+              Number(b.qualityLabel.replace('p', ''))
+                ? -1
+                : 1
+            )
+            .sort((a, b) => (/mp4/.test(a.mimeType) ? -1 : 1))
+            .map((el) => ({
+              ...el,
+              label: `${el.qualityLabel} - ${el.mimeType}`
+            }))
+        : [];
+    },
+    ytdlAQualities() {
+      return this.videoInfo
+        ? this.videoInfo.formats
+            .filter(({ mimeType }) => /audio/.test(mimeType))
+            .sort(({ mimeType }) => (/mp4/.test(mimeType) ? -1 : 1))
+            .map((el) => ({
+              ...el,
+              label: `${el.quality} - ${el.mimeType}`
+            }))
+        : [];
+    },
+
+    youtubeDlVQualities() {
       return this.formats
         .filter(({ label }) => /video only/.test(label))
         .sort((a, b) => {
@@ -226,10 +289,15 @@ export default {
         })
         .sort((a) => (/mp4/g.test(a.label) ? -1 : 1));
     },
-    aQualities() {
+    youtubeDlAQualities() {
       return this.formats
         .filter(({ label }) => /audio only/.test(label))
         .sort((a) => (/webm/g.test(a.label) ? 1 : -1));
+    },
+
+    recordContent() {
+      if (!this.videoInfo) return false;
+      return this.isLive || this.videoInfo.videoDetails.isUpcoming;
     },
 
     isLive() {
@@ -248,13 +316,13 @@ export default {
     fetchingFormats(v) {
       v && (this.formats = []);
     },
-    formats() {
+    vQualities() {
       this.$nextTick(() => {
         if (this.vQualities.length) {
-          this.vQuality = this.vQualities[0];
+          this.vQuality = this.vQualities[0] || { itag: 0, label: '' };
         }
         if (this.aQualities.length) {
-          this.aQuality = this.aQualities[0];
+          this.aQuality = this.aQualities[0] || { itag: 0, label: '' };
         }
       });
     },
@@ -263,6 +331,11 @@ export default {
     },
     useCookie(v) {
       this.$db.set('use_cookie', v).write();
+    },
+    dlMethod(v) {
+      if (v === 'youtube-dl') {
+        this.fetchYoutubeDlFormats(this.ytUrl);
+      }
     }
   },
 
@@ -333,7 +406,7 @@ export default {
         path: this.$db.get('dl_path').value() || '',
         tumbnailPath: '',
         thumbnailURL: '',
-        dlMethod: 'youtube-dl',
+        dlMethod: 'ytdl',
         title: '',
         loading: false,
         videoInfo: null,
@@ -370,12 +443,19 @@ export default {
         e && e.target.blur();
       }
     },
+
     getVideoInfo(url) {
       if (!url) return;
       this.loading = true;
-      this.fetchingFormats = true;
 
       ipcRenderer.send('get-yt-info', url);
+      if (this.dlMethod === 'youtube-dl') {
+        this.fetchYoutubeDlFormats(url);
+      }
+    },
+
+    fetchYoutubeDlFormats(url) {
+      this.fetchingFormats = true;
       ipcRenderer.send('get-yt-format', url);
     },
 
