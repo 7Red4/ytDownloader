@@ -29,9 +29,12 @@
       <v-btn fab small text @click="isSettingDialog = true">
         <v-icon>mdi-cog-outline</v-icon>
       </v-btn>
+      <v-btn fab small text @click="isHelpDialog = true">
+        <v-icon>mdi-help-circle-outline</v-icon>
+      </v-btn>
 
       <v-spacer></v-spacer>
-      <v-tabs color="white" centered>
+      <v-tabs color="white" centered v-if="false">
         <v-tab to="/">
           <span class="text-h6 white--text">
             <v-icon>mdi-youtube</v-icon>
@@ -64,7 +67,7 @@
     <v-main class="overflow-y-auto">
       <transition name="route-change-transition">
         <keep-alive>
-          <router-view :key="$route.fullPath"></router-view>
+          <router-view :key="$route.fullPath" class="pb-8"></router-view>
         </keep-alive>
       </transition>
     </v-main>
@@ -113,6 +116,17 @@
 
     <BotSheet :info="getError" />
     <SettingDialog v-model="isSettingDialog" />
+    <HelpDialog v-model="isHelpDialog" />
+
+    <v-card
+      :color="`grey ${$vuetify.theme.dark ? 'darken' : 'lighten'}-3`"
+      flat
+      tile
+      class="bottom_status_bar px-4"
+      height="24"
+    >
+      <span class="grey--text">v{{ version }}</span>
+    </v-card>
   </v-app>
 </template>
 
@@ -124,22 +138,25 @@ import { mapActions, mapGetters } from 'vuex';
 import QueTracker from '@/components/QueTracker';
 import BotSheet from '@/components/BotSheet';
 import SettingDialog from '@/components/SettingDialog';
+import HelpDialog from '@/components/HelpDialog';
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
 export default {
   name: 'App',
 
-  components: { QueTracker, BotSheet, SettingDialog },
+  components: { QueTracker, BotSheet, SettingDialog, HelpDialog },
 
   data() {
     return {
       platform: '',
+      version: '',
       isMaximized: false,
       isDrawer: false,
 
       isMenuShow: false,
       isSettingDialog: false,
+      isHelpDialog: false,
       x: 0,
       y: 0
     };
@@ -172,18 +189,18 @@ export default {
     ipcRenderer.on('get-platform-reply', (event, platform) => {
       this.platform = platform;
     });
+    ipcRenderer.send('get-version');
+    ipcRenderer.on('get-version-reply', (event, version) => {
+      this.version = version;
+    });
 
     // set tracker event listener
-    ipcRenderer.on('download-processing', (event, tracker) => {
+    ipcRenderer.on('update-tracker', (event, tracker) => {
       this.SET_QUE(tracker);
     });
 
     ipcRenderer.on('snapshot-update', (event, tracker) => {
       this.SET_QUE({ ...tracker, timestamp: Date.now() });
-    });
-
-    ipcRenderer.on('download-complete', (event, tracker) => {
-      this.SET_QUE(tracker);
     });
 
     ipcRenderer.on('start-fail', (event, error) => {
@@ -209,13 +226,13 @@ export default {
 
   mounted() {
     // console.log(this.$db.getState());
-    const isDark = this.$db.get('dark').value();
+    const isDark = !this.$db.get('light').value();
     this.$vuetify.theme.dark = !!isDark;
 
-    const last_route = this.$db.get('last_route').value();
-    if (!!last_route && this.$route.path !== last_route) {
-      this.$router.push(last_route);
-    }
+    // const last_route = this.$db.get('last_route').value();
+    // if (!!last_route && this.$route.path !== last_route) {
+    //   this.$router.push(last_route);
+    // }
 
     this.$store.dispatch(
       'SET_SHUFFLE_STATE',
@@ -232,7 +249,7 @@ export default {
       'SET_ERROR'
     ]),
     handleChangeDark(v) {
-      this.$db.set('dark', v).write();
+      this.$db.set('light', !v).write();
     },
     minimizeWindow() {
       ipcRenderer.send('minimize-window');
@@ -292,5 +309,12 @@ export default {
   position: absolute;
   width: 100%;
   transition: 0.17s;
+}
+
+.bottom_status_bar {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  left: 0;
 }
 </style>

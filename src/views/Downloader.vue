@@ -42,9 +42,15 @@
             outlined
           ></v-text-field>
 
-          <p class="grey--text text-body-2 my-1">直播中的影片無法選擇音質</p>
+          <p class="grey--text text-body-2 my-1">
+            {{
+              videoInfo.videoDetails.isUpcoming
+                ? '預約直播 畫/音質 預設皆為最高'
+                : '直播中的影片無法選擇音質'
+            }}
+          </p>
 
-          <div v-if="!isLive" class="d-flex flex-wrap mb-3">
+          <div v-if="!recordContent" class="d-flex flex-wrap mb-3">
             <v-checkbox
               label="下載視訊"
               :value="!sourceReq.noVideo"
@@ -61,17 +67,19 @@
               @change="(v) => (sourceReq.noAudio = !v)"
             ></v-checkbox>
           </div>
+          <SizeBox v-else height="24" />
 
           <v-row>
             <v-col cols="auto">
               <v-select
-                v-show="!isLive"
                 :items="[
                   { text: 'ytdl', value: 'ytdl' },
                   {
-                    text: 'youtube-dl 開發中',
+                    text: `youtube-dl ${
+                      recordContent ? '目前錄影只使用 ytdl' : ''
+                    }`,
                     value: 'youtube-dl',
-                    disabled: true
+                    disabled: recordContent
                   }
                 ]"
                 v-model="dlMethod"
@@ -82,72 +90,64 @@
             </v-col>
           </v-row>
 
-          <v-menu max-height="400">
-            <template #activator="{ on }">
-              <v-text-field
-                v-on="on"
-                :value="vQualityText"
-                label="選擇畫質"
-                readonly
-                outlined
-              ></v-text-field>
-            </template>
-            <v-list>
-              <v-list-item-group v-model="vQuality" label="選擇畫質">
-                <v-list-item
-                  v-for="(format, i) in vQualities"
-                  :key="i"
-                  :value="format"
-                  :disabled="format.itag === vQuality.itag"
-                  two-line
-                >
-                  <v-list-item-content>
-                    <v-list-item-title
-                      v-text="format.qualityLabel"
-                    ></v-list-item-title>
-                    <v-list-item-subtitle
-                      v-text="format.quality"
-                    ></v-list-item-subtitle>
-                    <v-list-item-subtitle
-                      v-text="format.mimeType"
-                    ></v-list-item-subtitle>
-                  </v-list-item-content>
-                </v-list-item>
-              </v-list-item-group>
-            </v-list>
-          </v-menu>
+          <Async
+            v-if="!videoInfo.videoDetails.isUpcoming"
+            :loading="dlMethod === 'youtube-dl' && fetchingFormats"
+          >
+            <v-menu max-height="400">
+              <template #activator="{ on }">
+                <v-text-field
+                  v-on="on"
+                  :value="vQuality.label"
+                  label="選擇畫質"
+                  readonly
+                  outlined
+                ></v-text-field>
+              </template>
+              <v-list>
+                <v-list-item-group v-model="vQuality" label="選擇畫質">
+                  <v-list-item
+                    v-for="(format, i) in vQualities"
+                    :key="i"
+                    :value="format"
+                    :disabled="format.itag === vQuality.itag"
+                    two-line
+                  >
+                    <v-list-item-content>
+                      {{ format.label }}
+                    </v-list-item-content>
+                  </v-list-item>
+                </v-list-item-group>
+              </v-list>
+            </v-menu>
 
-          <v-menu max-height="400" v-if="!isLive">
-            <template #activator="{ on }">
-              <v-text-field
-                v-on="on"
-                :value="aQualityText"
-                label="選擇音質"
-                readonly
-                outlined
-              ></v-text-field>
-            </template>
-            <v-list>
-              <v-list-item-group v-model="aQuality" label="選擇音質">
-                <v-list-item
-                  v-for="(format, i) in aQualities"
-                  :key="i"
-                  :value="format"
-                  :disabled="format.itag === aQuality.itag"
-                  two-line
-                >
-                  <v-list-item-content>
-                    <v-list-item-title
-                      v-text="format.quality"
-                    ></v-list-item-title>
-                    <v-list-item-subtitle
-                      v-text="format.mimeType"
-                    ></v-list-item-subtitle>
-                  </v-list-item-content>
-                </v-list-item>
-              </v-list-item-group>
-            </v-list>
-          </v-menu>
+            <v-menu max-height="400" v-if="!isLive">
+              <template #activator="{ on }">
+                <v-text-field
+                  v-on="on"
+                  :value="aQuality.label"
+                  label="選擇音質"
+                  readonly
+                  outlined
+                ></v-text-field>
+              </template>
+              <v-list>
+                <v-list-item-group v-model="aQuality" label="選擇音質">
+                  <v-list-item
+                    v-for="(format, i) in aQualities"
+                    :key="i"
+                    :value="format"
+                    :disabled="format.itag === aQuality.itag"
+                    two-line
+                  >
+                    <v-list-item-content>
+                      {{ format.label }}
+                    </v-list-item-content>
+                  </v-list-item>
+                </v-list-item-group>
+              </v-list>
+            </v-menu>
+          </Async>
         </v-form>
         <v-switch v-model="useCookie" label="使用 cookie"></v-switch>
         <p class="body-2">
@@ -155,9 +155,17 @@
           若要下載的影片為公開影片 建議不勾選
         </p>
 
-        <v-card-actions>
-          <v-btn color="primary" @click="addQue(true)">加到佇列並開始</v-btn>
-          <v-btn color="secondary" @click="addQue(false)">加到佇列</v-btn>
+        <v-card-actions v-if="!fetchingFormats">
+          <template v-if="videoInfo.videoDetails.isUpcoming">
+            <v-btn color="grey" @click="reserve">
+              <v-icon>mdi-clock-outline</v-icon>
+              預約
+            </v-btn>
+          </template>
+          <template v-else>
+            <v-btn color="primary" @click="addQue(true)">加到佇列並開始</v-btn>
+            <v-btn color="secondary" @click="addQue(false)">加到佇列</v-btn>
+          </template>
         </v-card-actions>
       </template>
     </v-container>
@@ -177,6 +185,7 @@
 <script>
 import { ipcRenderer } from 'electron';
 import filenamify from 'filenamify';
+import dayjs from 'dayjs';
 
 import { mapActions, mapGetters } from 'vuex';
 
@@ -191,7 +200,7 @@ export default {
 
   data() {
     return {
-      ytUrl: '',
+      ytUrl: isDevelopment ? 'https://www.youtube.com/watch?v=3-LIhtPyeKE' : '',
       path: this.$db.get('dl_path').value() || '',
       tumbnailPath: '',
       thumbnailURL: '',
@@ -202,8 +211,10 @@ export default {
       isMulti: false,
       snackMsg: '',
       videoInfo: null,
-      vQuality: { qualityLabel: '最高畫質', mimeType: 'mp4' },
-      aQuality: { mimeType: '最高音質' },
+      formats: [],
+      fetchingFormats: false,
+      vQuality: { itag: 0, label: '' },
+      aQuality: { itag: 0, label: '' },
       sourceReq: {
         noVideo: false,
         noAudio: false
@@ -215,6 +226,25 @@ export default {
   computed: {
     ...mapGetters(['getQueList', 'getQueById']),
     vQualities() {
+      if (this.dlMethod === 'youtube-dl') {
+        return this.youtubeDlVQualities;
+      } else if (this.dlMethod === 'ytdl') {
+        return this.ytdlVQualities;
+      } else {
+        return [];
+      }
+    },
+    aQualities() {
+      if (this.dlMethod === 'youtube-dl') {
+        return this.youtubeDlAQualities;
+      } else if (this.dlMethod === 'ytdl') {
+        return this.ytdlAQualities;
+      } else {
+        return [];
+      }
+    },
+
+    ytdlVQualities() {
       return this.videoInfo
         ? this.videoInfo.formats
             .filter(
@@ -228,38 +258,72 @@ export default {
                 : 1
             )
             .sort((a, b) => (/mp4/.test(a.mimeType) ? -1 : 1))
+            .map((el) => ({
+              ...el,
+              label: `${el.qualityLabel} - ${el.mimeType}`
+            }))
         : [];
     },
-    aQualities() {
+    ytdlAQualities() {
       return this.videoInfo
         ? this.videoInfo.formats
             .filter(({ mimeType }) => /audio/.test(mimeType))
             .sort(({ mimeType }) => (/mp4/.test(mimeType) ? -1 : 1))
+            .map((el) => ({
+              ...el,
+              label: `${el.quality} - ${el.mimeType}`
+            }))
         : [];
     },
-    vQualityText() {
-      return this.vQuality
-        ? `${this.vQuality.qualityLabel || ''} - ${this.vQuality.mimeType}`
-        : '';
+
+    youtubeDlVQualities() {
+      return this.formats
+        .filter(({ label }) => /video only/.test(label))
+        .sort((a, b) => {
+          const aQ = a.label.match(/[0-9]{1,4}p/)
+            ? a.label.match(/[0-9]{1,4}p/)[0]
+            : '';
+          const bQ = b.label.match(/[0-9]{1,4}p/)
+            ? b.label.match(/[0-9]{1,4}p/)[0]
+            : '';
+          Number(aQ.replace('p', '')) < Number(bQ.replace('p', '')) ? -1 : 1;
+        })
+        .sort((a) => (/mp4/g.test(a.label) ? -1 : 1));
     },
-    aQualityText() {
-      return this.aQuality ? `${this.aQuality.mimeType}` : '';
+    youtubeDlAQualities() {
+      return this.formats
+        .filter(({ label }) => /audio only/.test(label))
+        .sort((a) => (/webm/g.test(a.label) ? 1 : -1));
+    },
+
+    recordContent() {
+      if (!this.videoInfo) return false;
+      return this.isLive || this.videoInfo.videoDetails.isUpcoming;
     },
 
     isLive() {
-      return this.videoInfo && this.videoInfo.videoDetails.isLive;
+      return (
+        this.videoInfo &&
+        this.videoInfo.videoDetails.liveBroadcastDetails &&
+        this.videoInfo.videoDetails.liveBroadcastDetails.isLiveNow
+      );
     }
   },
 
   watch: {
     videoInfo(v) {
       v && (this.title = filenamify(v.videoDetails.title));
+    },
+    fetchingFormats(v) {
+      v && (this.formats = []);
+    },
+    vQualities() {
       this.$nextTick(() => {
         if (this.vQualities.length) {
-          this.vQuality = this.vQualities[0];
+          this.vQuality = this.vQualities[0] || { itag: 0, label: '' };
         }
         if (this.aQualities.length) {
-          this.aQuality = this.aQualities[0];
+          this.aQuality = this.aQualities[0] || { itag: 0, label: '' };
         }
       });
     },
@@ -268,6 +332,11 @@ export default {
     },
     useCookie(v) {
       this.$db.set('use_cookie', v).write();
+    },
+    dlMethod(v) {
+      if (v === 'youtube-dl' && !!this.ytUrl && !this.formats.length) {
+        this.fetchYoutubeDlFormats(this.ytUrl);
+      }
     }
   },
 
@@ -282,6 +351,21 @@ export default {
       this.loading = false;
     });
 
+    ipcRenderer.on('get-yt-format-reply', (event, formats) => {
+      this.formats = formats
+        .filter((f) => !!f)
+        .map((f) => {
+          const parsed = f.replace(/\s\s+/g, ' ');
+          const itag = parsed.split(' ')[0];
+          const label = parsed.replace(itag, '');
+          return {
+            itag,
+            label
+          };
+        });
+      this.fetchingFormats = false;
+    });
+
     ipcRenderer.on(
       'pick-path-reply',
       (event, path) => (this.path = !path.canceled ? path.filePaths[0] : '')
@@ -290,6 +374,11 @@ export default {
     ipcRenderer.on('set-que-id-reply', (event, tracker) =>
       this.SET_QUE(tracker)
     );
+
+    ipcRenderer.on('reserve-fail', (event, path) => {
+      this.snackMsg = '預約失敗';
+      this.snack = true;
+    });
   },
 
   mounted() {
@@ -327,8 +416,10 @@ export default {
         title: '',
         loading: false,
         videoInfo: null,
-        vQuality: { qualityLabel: '最高畫質', mimeType: 'mp4' },
-        aQuality: { mimeType: '最高音質' },
+        formats: [],
+        fetchingFormats: false,
+        vQuality: { itag: 0, label: '' },
+        aQuality: { itag: 0, label: '' },
         sourceReq: {
           noVideo: false,
           noAudio: false
@@ -358,35 +449,84 @@ export default {
         e && e.target.blur();
       }
     },
+
     getVideoInfo(url) {
       if (!url) return;
       this.loading = true;
+
       ipcRenderer.send('get-yt-info', url);
+      this.formats = [];
+      if (this.dlMethod === 'youtube-dl') {
+        this.fetchYoutubeDlFormats(url);
+      }
+    },
+
+    fetchYoutubeDlFormats(url) {
+      this.fetchingFormats = true;
+      ipcRenderer.send('get-yt-format', url);
     },
 
     pickFilePath() {
       ipcRenderer.send('pick-path');
     },
 
-    addQue(andStart) {
-      if (!this.$refs.form.validate()) return;
+    getQueFromData(extraProp = {}) {
       const cookie = this.$db.get('cookie').value();
-      ipcRenderer.send(andStart ? 'start-que' : 'add-que', {
+      const length = () => {
+        if (!this.videoInfo.videoDetails || this.isLive) return 0;
+        return Number(this.videoInfo.videoDetails.lengthSeconds);
+      };
+      return {
         title: this.title,
         url: this.ytUrl,
         path: this.path,
         dlMethod: this.dlMethod,
+        duration: length(),
         quality: {
-          audio: this.aQuality
-            ? this.aQuality.itag || 'highestaudio'
-            : 'highestaudio',
-          video: this.vQuality
-            ? this.vQuality.itag || 'highestvideo'
-            : 'highestvideo'
+          audio: this.aQuality && this.aQuality.itag,
+          video: this.vQuality && this.vQuality.itag
         },
         sourceReq: this.sourceReq,
-        cookie: this.useCookie ? cookie : false
-      });
+        cookie: this.useCookie ? cookie : false,
+        ...extraProp
+      };
+    },
+
+    reserve() {
+      const upComeTime =
+        (this.videoInfo &&
+          this.videoInfo.videoDetails &&
+          this.videoInfo.videoDetails.liveBroadcastDetails &&
+          this.videoInfo.videoDetails.liveBroadcastDetails.startTimestamp) ||
+        null;
+
+      const now = dayjs();
+      const diff = now.diff(upComeTime, 's');
+
+      if (!diff && diff >= 0) {
+        this.snackMsg = '預約失敗';
+        this.snack = true;
+        return;
+      }
+
+      this.snackMsg = '已新增預約至佇列';
+      this.snack = true;
+
+      ipcRenderer.send(
+        'reserve-que',
+        this.getQueFromData({
+          reserveTime: -diff
+        })
+      );
+      this.resetData();
+    },
+
+    addQue(andStart) {
+      if (!this.$refs.form.validate()) return;
+      ipcRenderer.send(
+        andStart ? 'start-que' : 'add-que',
+        this.getQueFromData()
+      );
       this.snackMsg = '已新增至佇列';
       this.snack = true;
       this.resetData();

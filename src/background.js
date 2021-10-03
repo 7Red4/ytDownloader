@@ -2,18 +2,32 @@ import fs from 'fs';
 import https from 'https';
 import os from 'os';
 
-import { app, protocol, BrowserWindow, ipcMain, dialog, shell } from 'electron';
+import {
+  app,
+  protocol,
+  BrowserWindow,
+  ipcMain,
+  dialog,
+  shell,
+  Menu,
+  Tray
+} from 'electron';
 import { createProtocol } from 'vue-cli-plugin-electron-builder/lib';
 import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer';
-import { getInfo } from './controller/ytdl.js';
+import { getInfo, getFormat } from './controller/ytdl.js';
 import Que from './classes/Que.js';
 import consola from 'consola';
 import { CookieMap } from 'cookiefile';
+import PATH from 'path';
+const appRootDir = require('app-root-dir').get();
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
 const queMap = new Map();
 
+const ICON_DIR = PATH.join(appRootDir, 'src', 'assets', 'icons', 'icon.png');
+
 let win = {};
+let tray = null;
 
 protocol.registerSchemesAsPrivileged([
   { scheme: 'app', privileges: { secure: true, standard: true } }
@@ -22,9 +36,10 @@ protocol.registerSchemesAsPrivileged([
 async function createWindow() {
   win = new BrowserWindow({
     frame: false,
-    width: isDevelopment ? 1360 : 810,
+    width: 810,
     height: 960,
     titleBarStyle: 'hidden',
+    icon: ICON_DIR,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false
@@ -42,7 +57,7 @@ async function createWindow() {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
-    app.quit();
+    // app.quit();
   }
 });
 
@@ -60,6 +75,26 @@ app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });
 
+const setUpTray = () => {
+  tray = new Tray(ICON_DIR);
+  const contextMenu = Menu.buildFromTemplate([
+    { type: 'separator' },
+    {
+      label: 'quit',
+      type: 'normal',
+      click: () => {
+        app.quit();
+      }
+    }
+  ]);
+  tray.setToolTip('ytDownloader');
+  tray.setContextMenu(contextMenu);
+
+  tray.on('double-click', () => {
+    win.show();
+  });
+};
+
 app.on('ready', async () => {
   if (isDevelopment && !process.env.IS_TEST) {
     try {
@@ -68,6 +103,9 @@ app.on('ready', async () => {
       consola.error('Vue Devtools failed to install:', e.toString());
     }
   }
+
+  setUpTray();
+
   createWindow();
 });
 
@@ -91,12 +129,16 @@ ipcMain.on('get-platform', (event) => {
   event.reply('get-platform-reply', platform);
 });
 
+ipcMain.on('get-version', (event) => {
+  event.reply('get-version-reply', app.getVersion());
+});
+
 ipcMain.on('minimize-window', () => win.minimize && win.minimize());
 ipcMain.on('toggle-window', () =>
   win.isMaximized() ? win.unmaximize() : win.maximize()
 );
 ipcMain.on('close-window', () => {
-  process.exit(0);
+  win.hide();
 });
 
 ipcMain.on('get-yt-info', async (event, url) => {
@@ -108,12 +150,35 @@ ipcMain.on('get-yt-info', async (event, url) => {
   }
 });
 
+ipcMain.on('get-yt-format', async (event, url) => {
+  try {
+    const formats = await getFormat(url);
+    event.reply('get-yt-format-reply', formats);
+  } catch (error) {
+    consola.error(error);
+  }
+});
+
 ipcMain.on('pick-path', async (event) => {
   const path = await dialog.showOpenDialog({
     properties: ['openFile', 'openDirectory', 'multiSelections']
   });
 
   event.reply('pick-path-reply', path);
+});
+
+ipcMain.on('reserve-que', async (event, req) => {
+  const que = new Que(req);
+  try {
+    await que.setBasicInfo({ req, event });
+    queMap.set(que.id, que);
+    que.reserve();
+
+    event.reply('set-que-id-reply', que.tracker);
+  } catch (error) {
+    event.reply('start-fail', que.id);
+    consola.error(error);
+  }
 });
 
 ipcMain.on('start-que', async (event, req) => {
@@ -272,13 +337,19 @@ ipcMain.on('choose-cookie-file', (event) => {
     const path = dialog.showOpenDialogSync({
       filters: [{ name: 'Text', extensions: ['txt'] }]
     });
+    if (!path) return;
+    const originString = fs.readFileSync(path[0], 'utf8');
     const cookieFile = new CookieMap(path[0]);
     let cookieString = '';
     cookieFile.forEach(({ value }, key) => {
       if (value) cookieString += `${key}=${value};`;
     });
 
-    event.reply('choose-cookie-file-reply', cookieString);
+    event.reply('choose-cookie-file-reply', {
+      filePath: path[0],
+      originString,
+      cookieString
+    });
   } catch (error) {
     consola.error(error);
   }

@@ -11,10 +11,17 @@ export default class Tracker {
     this.merged = { frame: 0, speed: '0x', fps: 0 };
     this.noVideo = false;
     this.noAudio = false;
+    this.isLive = false;
+    this.isReserve = false;
+    this.waitingTime = 0;
+    this.dlMethod = 'ytdl';
+
+    this.isVideoSourceFailed = false;
 
     this.isMerging = false;
     this.isRunning = false;
     this.isRecording = false;
+    this.isComplete = false;
     this.error = false;
   }
 

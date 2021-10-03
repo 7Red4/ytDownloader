@@ -7,7 +7,7 @@
 可以下載 youtube 影片的跨平台桌面應用程式
 使用 [ytdl-core]('https://github.com/fent/node-ytdl-core') 作為核心 [ffmpeg]('https://www.ffmpeg.org/') 做影像處理
 
-ver 2.3.2
+ver 2.4.0
 
 [載點](https://github.com/7Red4/ytDownloader/releases)
 

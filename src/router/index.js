@@ -10,12 +10,12 @@ const routes = [
     path: '/',
     name: 'Downloader',
     component: Downloader
-  },
-  {
-    path: '/Player',
-    name: 'Player',
-    component: Player
   }
+  // {
+  //   path: '/Player',
+  //   name: 'Player',
+  //   component: Player
+  // }
 ];
 
 const router = new VueRouter({

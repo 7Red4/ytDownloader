@@ -19,14 +19,16 @@
           <v-btn color="primary" @click="pickCookieFile" class="mr-3">
             選擇檔案
           </v-btn>
-          <v-btn color="error" text @click="cookie = ''">刪除 cookie</v-btn>
+          <v-btn color="error" text @click="clearCookie">刪除 cookie</v-btn>
         </div>
+        <p>cookie 檔案路徑 : {{ cookieFilePath || '無' }}</p>
         <v-textarea
-          label="Cookie"
+          label="Cookie HTTP request 格式"
           v-model="cookie"
           readonly
-          auto-grow
           outlined
+          no-resize
+          rows="7"
         ></v-textarea>
       </v-card-text>
 
@@ -42,7 +44,9 @@
 <script>
 import { ipcRenderer } from 'electron';
 const schema = {
-  cookie: ''
+  cookie: '',
+  cookieFilePath: '',
+  originCookieString: ''
 };
 
 export default {
@@ -59,15 +63,29 @@ export default {
   },
 
   created() {
-    ipcRenderer.on('choose-cookie-file-reply', (event, cookie) => {
-      this.cookie = cookie;
-    });
+    ipcRenderer.on(
+      'choose-cookie-file-reply',
+      (event, { filePath, originString, cookieString } = {}) => {
+        this.cookieFilePath = filePath;
+        this.originCookieString = originString;
+        this.cookie = cookieString;
+      }
+    );
   },
 
   methods: {
     init() {
       const cookie = this.$db.get('cookie').value();
+      const cookieFilePath = this.$db.get('cookie_path').value();
+      const originCookieString = this.$db.get('cookie_o').value();
       this.cookie = cookie;
+      this.cookieFilePath = cookieFilePath;
+      this.originCookieString = originCookieString;
+    },
+    clearCookie() {
+      this.cookieFilePath = '';
+      this.originCookieString = '';
+      this.cookie = '';
     },
     dismiss() {
       Object.keys(schema).forEach((key) => {
@@ -80,6 +98,8 @@ export default {
 
     submit() {
       this.$db.set('cookie', this.cookie).write();
+      this.$db.set('cookie_path', this.cookieFilePath).write();
+      this.$db.set('cookie_o', this.originCookieString).write();
       this.$emit('input', false);
     }
   }
