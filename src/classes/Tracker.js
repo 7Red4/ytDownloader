@@ -12,6 +12,8 @@ export default class Tracker {
     this.noVideo = false;
     this.noAudio = false;
     this.isLive = false;
+    this.isReserve = false;
+    this.waitingTime = 0;
     this.dlMethod = 'ytdl';
 
     this.isVideoSourceFailed = false;

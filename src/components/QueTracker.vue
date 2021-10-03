@@ -113,13 +113,7 @@
             </template>
             <p>
               執行狀態:
-              {{
-                processing
-                  ? tracker.isMerging
-                    ? '合併中'
-                    : '下載/錄製中'
-                  : '閒置'
-              }}
+              {{ processingStatus }}
               <v-progress-circular
                 v-if="processing"
                 size="12"
@@ -127,6 +121,9 @@
                 indeterminate
                 color="primary"
               ></v-progress-circular>
+            </p>
+            <p v-if="tracker.isReserve && !processing">
+              執行倒數: {{ $s2hms(tracker.waitingTime) }}
             </p>
           </div>
         </v-col>
@@ -228,6 +225,14 @@ export default {
   },
 
   computed: {
+    processingStatus() {
+      if (this.tracker.isReserve) return '等待中';
+      return this.processing
+        ? this.tracker.isMerging
+          ? '合併中'
+          : '下載/錄製中'
+        : '閒置';
+    },
     isLive() {
       return this.tracker.isLive;
     },

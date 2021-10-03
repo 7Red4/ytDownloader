@@ -18,6 +18,7 @@
     "app-root-dir": "^1.0.2",
     "cookiefile": "^1.0.10",
     "core-js": "^3.6.5",
+    "dayjs": "^1.10.7",
     "filenamify": "^4.3.0",
     "lowdb": "^1.0.0",
     "stream-to-blob": "^2.0.1",

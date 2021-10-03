@@ -195,16 +195,12 @@ export default {
     });
 
     // set tracker event listener
-    ipcRenderer.on('download-processing', (event, tracker) => {
+    ipcRenderer.on('update-tracker', (event, tracker) => {
       this.SET_QUE(tracker);
     });
 
     ipcRenderer.on('snapshot-update', (event, tracker) => {
       this.SET_QUE({ ...tracker, timestamp: Date.now() });
-    });
-
-    ipcRenderer.on('download-complete', (event, tracker) => {
-      this.SET_QUE(tracker);
     });
 
     ipcRenderer.on('start-fail', (event, error) => {

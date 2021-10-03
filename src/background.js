@@ -167,8 +167,18 @@ ipcMain.on('pick-path', async (event) => {
   event.reply('pick-path-reply', path);
 });
 
-ipcMain.on('reserve-que', (event, req) => {
-  //
+ipcMain.on('reserve-que', async (event, req) => {
+  const que = new Que(req);
+  try {
+    await que.setBasicInfo({ req, event });
+    queMap.set(que.id, que);
+    que.reserve();
+
+    event.reply('set-que-id-reply', que.tracker);
+  } catch (error) {
+    event.reply('start-fail', que.id);
+    consola.error(error);
+  }
 });
 
 ipcMain.on('start-que', async (event, req) => {

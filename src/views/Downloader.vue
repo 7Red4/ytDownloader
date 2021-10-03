@@ -185,6 +185,7 @@
 <script>
 import { ipcRenderer } from 'electron';
 import filenamify from 'filenamify';
+import dayjs from 'dayjs';
 
 import { mapActions, mapGetters } from 'vuex';
 
@@ -199,7 +200,7 @@ export default {
 
   data() {
     return {
-      ytUrl: '',
+      ytUrl: isDevelopment ? 'https://www.youtube.com/watch?v=3-LIhtPyeKE' : '',
       path: this.$db.get('dl_path').value() || '',
       tumbnailPath: '',
       thumbnailURL: '',
@@ -333,7 +334,7 @@ export default {
       this.$db.set('use_cookie', v).write();
     },
     dlMethod(v) {
-      if (v === 'youtube-dl') {
+      if (v === 'youtube-dl' && !!this.ytUrl && !this.formats.length) {
         this.fetchYoutubeDlFormats(this.ytUrl);
       }
     }
@@ -373,6 +374,11 @@ export default {
     ipcRenderer.on('set-que-id-reply', (event, tracker) =>
       this.SET_QUE(tracker)
     );
+
+    ipcRenderer.on('reserve-fail', (event, path) => {
+      this.snackMsg = '預約失敗';
+      this.snack = true;
+    });
   },
 
   mounted() {
@@ -449,6 +455,7 @@ export default {
       this.loading = true;
 
       ipcRenderer.send('get-yt-info', url);
+      this.formats = [];
       if (this.dlMethod === 'youtube-dl') {
         this.fetchYoutubeDlFormats(url);
       }
@@ -486,12 +493,32 @@ export default {
     },
 
     reserve() {
+      const upComeTime =
+        (this.videoInfo &&
+          this.videoInfo.videoDetails &&
+          this.videoInfo.videoDetails.liveBroadcastDetails &&
+          this.videoInfo.videoDetails.liveBroadcastDetails.startTimestamp) ||
+        null;
+
+      const now = dayjs();
+      const diff = now.diff(upComeTime, 's');
+
+      if (!diff && diff >= 0) {
+        this.snackMsg = '預約失敗';
+        this.snack = true;
+        return;
+      }
+
+      this.snackMsg = '已新增預約至佇列';
+      this.snack = true;
+
       ipcRenderer.send(
         'reserve-que',
         this.getQueFromData({
-          reserveTime: '' // get it from this.videoInfo.videoDetails.liveBroadcastDetails
+          reserveTime: -diff
         })
       );
+      this.resetData();
     },
 
     addQue(andStart) {

@@ -51,8 +51,10 @@ export default class Que {
     this.format = 'mp4';
     this.event = null;
     this.timer = null;
+    this.reserveTimmer = null;
     this.req = req || null;
     this.cookie = '';
+    this.reserveTime = 0;
 
     this.creatingSnapshot = false;
     this.tracker = new Tracker(id);
@@ -86,18 +88,19 @@ export default class Que {
     !!title && (this.title = title);
     !!tracker.path && (this.path = tracker.path);
     this.output = PATH.join(this.path, this.title);
-    this.event.reply('download-processing', this.tracker);
+    this.event.reply('update-tracker', this.tracker);
   }
 
   async setBasicInfo({ req = this.req, event }) {
     this.tracker = new Tracker(this.id);
     this.req = req;
     this.event = event;
-    const { url, title, path, sourceReq, cookie, dlMethod } = req;
+    const { url, title, path, sourceReq, cookie, dlMethod, reserveTime } = req;
     const { noVideo, noAudio } = sourceReq || {};
     this.dlMethod = dlMethod;
     this.noVideo = noVideo;
     this.noAudio = noAudio;
+    this.reserveTime = reserveTime;
     this.tracker.noVideo = noVideo;
     this.tracker.noAudio = noAudio;
 
@@ -144,6 +147,36 @@ export default class Que {
       );
       this.fileCheckAndRename(`${this.output}.${this.format}`, count + 1);
     }
+  }
+
+  reserve() {
+    const { reserveTime } = this.req;
+
+    if (!reserveTime) {
+      this.event.reply('reserve-fail', 'INVALID_TIME');
+    }
+
+    this.tracker.isReserve = true;
+    this.setReserveTimmer(reserveTime);
+  }
+
+  setReserveTimmer(seconds) {
+    this.clearReserveTimmer();
+    this.reserveTimmer = setInterval(() => {
+      seconds--;
+      this.tracker.waitingTime = seconds;
+      this.event.reply('update-tracker', this.tracker);
+
+      if (seconds <= 0) {
+        this.clearReserveTimmer();
+        this.startProcess();
+      }
+    }, 1000);
+  }
+
+  clearReserveTimmer() {
+    clearInterval(this.reserveTimmer);
+    this.reserveTimmer = null;
   }
 
   async startProcess({ req = this.req, event }) {
@@ -341,7 +374,7 @@ export default class Que {
     this.tracker.isRunning = true;
 
     this.tracker.isComplete = false;
-    this.event.reply('download-processing', this.tracker);
+    this.event.reply('update-tracker', this.tracker);
 
     const getVideoM3u8 = () =>
       new Promise((resolve, reject) => {
@@ -433,7 +466,7 @@ export default class Que {
       }
 
       this.tracker.merged = args;
-      this.event.reply('download-processing', this.tracker);
+      this.event.reply('update-tracker', this.tracker);
     });
 
     ffmpegProcess.on('close', (e) => {
@@ -451,7 +484,7 @@ export default class Que {
         consola.error(error);
       } finally {
         this.tracker.isComplete = true;
-        this.event.reply('download-complete', this.tracker);
+        this.event.reply('update-tracker', this.tracker);
       }
     });
 
@@ -512,7 +545,7 @@ export default class Que {
       }
 
       this.tracker.merged = args;
-      this.event.reply('download-processing', this.tracker);
+      this.event.reply('update-tracker', this.tracker);
       consola.info(lines.join(', '));
     });
 
@@ -533,7 +566,7 @@ export default class Que {
         consola.error('delete error');
         consola.error(error);
       } finally {
-        this.event.reply('download-complete', this.tracker);
+        this.event.reply('update-tracker', this.tracker);
       }
     });
 
@@ -596,7 +629,7 @@ export default class Que {
 
     this.timer = setInterval(() => {
       this.tracker.isRunning = true;
-      this.event.reply('download-processing', this.tracker);
+      this.event.reply('update-tracker', this.tracker);
     }, 1000);
   }
 
@@ -604,7 +637,7 @@ export default class Que {
     clearInterval(this.timer);
     this.timer = null;
     this.tracker.isRunning = false;
-    this.event.reply('download-processing', this.tracker);
+    this.event.reply('update-tracker', this.tracker);
   }
 
   snapShot(isLiveRecord) {
