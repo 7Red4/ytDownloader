@@ -21,8 +21,11 @@ ver 2.4.0
 - 可以決定要不要使用 cookie 來下載 (通常是 會員限定才需要 需年齡認證的影片也需要)
   必須要先載入 cookie 檔案
 - 按 "加到佇列並開始" 或你想要先加入等等在下載也可以按 "加到佇列"
+
   ![image](https://user-images.githubusercontent.com/40208491/135763292-341124ea-bac8-41cc-bc07-74288dbed72d.png)
+
 - 等他好
+
   ![image](https://user-images.githubusercontent.com/40208491/135763312-666ca46b-172f-48f5-ac33-b25367959d1f.png)
   ![image](https://user-images.githubusercontent.com/40208491/135763533-25b37179-fa5f-4725-813a-68a3f5109a16.png)
 
