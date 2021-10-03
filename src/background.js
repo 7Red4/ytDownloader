@@ -24,7 +24,7 @@ const appRootDir = require('app-root-dir').get();
 const isDevelopment = process.env.NODE_ENV !== 'production';
 const queMap = new Map();
 
-const ICON_DIR = PATH.join(appRootDir, 'src', 'assets', 'icons', 'icon.png');
+const ICON_DIR = PATH.join(appRootDir, 'icons', 'icon.png');
 
 let win = {};
 let tray = null;
@@ -104,9 +104,9 @@ app.on('ready', async () => {
     }
   }
 
-  setUpTray();
-
   createWindow();
+
+  setUpTray();
 });
 
 if (isDevelopment) {

@@ -67,6 +67,7 @@ export default class Que {
 
     this.isVideoSourceFailed = false;
 
+    this.isRunning = false;
     this.isMerging = false;
     this.isMerged = false;
 
@@ -180,6 +181,10 @@ export default class Que {
   }
 
   async startProcess({ req = this.req, event }) {
+    if (this.isRunning) {
+      return;
+    }
+    this.isRunning = true;
     // reset tracker
     this.video = null;
     this.audio = null;
@@ -636,6 +641,7 @@ export default class Que {
   stopSlowEmit() {
     clearInterval(this.timer);
     this.timer = null;
+    this.isRunning = false;
     this.tracker.isRunning = false;
     this.event.reply('update-tracker', this.tracker);
   }
