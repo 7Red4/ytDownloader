@@ -200,7 +200,7 @@ export default {
 
   data() {
     return {
-      ytUrl: isDevelopment ? 'https://www.youtube.com/watch?v=3-LIhtPyeKE' : '',
+      ytUrl: '',
       path: this.$db.get('dl_path').value() || '',
       tumbnailPath: '',
       thumbnailURL: '',
@@ -501,9 +501,12 @@ export default {
         null;
 
       const now = dayjs();
-      const diff = now.diff(upComeTime, 's');
+      let diff = now.diff(upComeTime, 's');
+      if (isNaN(diff)) {
+        diff = 0;
+      }
 
-      if (!diff && diff >= 0) {
+      if (!diff && diff > 0) {
         this.snackMsg = '預約失敗';
         this.snack = true;
         return;

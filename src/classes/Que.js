@@ -150,6 +150,23 @@ export default class Que {
     }
   }
 
+  async checkSource() {
+    try {
+      const info = await getInfo(this.req.url, this.defaultYtdlOption);
+      const isLiving =
+        info.videoDetails.liveBroadcastDetails &&
+        info.videoDetails.liveBroadcastDetails.isLiveNow;
+
+      if (isLiving) {
+        this.clearReserveTimmer();
+        this.startProcess({ req: this.req, event: this.event });
+      }
+    } catch (err) {
+      consola.error(err);
+      this.event.reply('start-fail', err);
+    }
+  }
+
   reserve() {
     const { reserveTime } = this.req;
 
@@ -158,19 +175,22 @@ export default class Que {
     }
 
     this.tracker.isReserve = true;
+    this.tracker.isLive = true;
     this.setReserveTimmer(reserveTime);
   }
 
   setReserveTimmer(seconds) {
     this.clearReserveTimmer();
+    const retryTimeOut = 5;
     this.reserveTimmer = setInterval(() => {
       seconds--;
       this.tracker.waitingTime = seconds;
-      this.event.reply('update-tracker', this.tracker);
+      if (seconds > 0) {
+        this.event.reply('update-tracker', this.tracker);
+      }
 
-      if (seconds <= 0) {
-        this.clearReserveTimmer();
-        this.startProcess();
+      if (seconds < 300 && !(seconds % retryTimeOut)) {
+        this.checkSource();
       }
     }, 1000);
   }
@@ -196,7 +216,7 @@ export default class Que {
     const workdir = PATH.join(this.path, '.ytdlWorkingFiles');
     if (!fs.existsSync(workdir)) {
       fs.mkdir(workdir, (err) => {
-        if (err) console.error(err);
+        if (err) consola.error(err);
       });
     }
 
@@ -266,7 +286,7 @@ export default class Que {
       const liveBroadcastDetails = (await getInfo(url)).videoDetails
         .liveBroadcastDetails;
       const isLive = liveBroadcastDetails && liveBroadcastDetails.isLiveNow;
-      consola.info(`isLive: ${isLive}`);
+      // consola.info(`isLive: ${isLive}`);
       if (isLiveRecord && !isLive) {
         await this.snapShot(isLiveRecord);
         this.stopProcess();
@@ -301,9 +321,11 @@ export default class Que {
       })
       .on('progress', (_, downloaded, total) => {
         this.tracker.audio = { downloaded, total };
-        consola.info(
-          `prcess: 'audio', downloaded: ${downloaded}, total: ${total}`
-        );
+        if (isDevelopment) {
+          consola.info(
+            `prcess: 'audio', downloaded: ${downloaded}, total: ${total}`
+          );
+        }
         bufferFunction(() => {
           this.snapShot(isLiveRecord);
         });
@@ -319,8 +341,10 @@ export default class Que {
         this.stopProcess();
       })
       .on('end', (e) => {
-        consola.error('audio end');
-        consola.warn(e);
+        if (isDevelopment) {
+          consola.error('audio end');
+          consola.warn(e);
+        }
         onAudioDone();
       });
 
@@ -338,12 +362,16 @@ export default class Que {
           this.isVideoSourceFailed = true;
           this.tracker.isVideoSourceFailed = true;
         }
-        consola.info(
-          `prcess: 'video', downloaded: ${downloaded}, total: ${total}`
-        );
+        if (isDevelopment) {
+          consola.info(
+            `prcess: 'video', downloaded: ${downloaded}, total: ${total}`
+          );
+        }
 
         if (isLiveRecord) {
-          checkLiveStatus();
+          bufferFunction(() => {
+            checkLiveStatus();
+          });
         }
         if ((!isLiveRecord && downloaded === total) || this.videoDestoryed) {
           video.destroy();
@@ -351,8 +379,10 @@ export default class Que {
         }
       })
       .on('end', (e) => {
-        consola.error('video end');
-        consola.warn(e);
+        if (isDevelopment) {
+          consola.error('video end');
+          consola.warn(e);
+        }
         onVideoDone();
       });
 
@@ -581,10 +611,16 @@ export default class Que {
   }
 
   stopProcess() {
+    this.clearReserveTimmer();
+    this.isReserve = false;
+    this.tracker.isReserve = false;
+
     this.videoDestoryed = true;
     this.audioDestoryed = true;
-    if (this.dlMethod === 'ytdl') {
+    if (this.isRunning && this.dlMethod === 'ytdl') {
       this.merge();
+    } else {
+      this.stopSlowEmit();
     }
   }
 

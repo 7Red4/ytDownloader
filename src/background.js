@@ -206,7 +206,9 @@ ipcMain.on('add-que', async (event, req) => {
 });
 
 ipcMain.on('delete-que', async (event, queId) => {
+  const que = queMap.get(queId);
   try {
+    que.stopProcess();
     queMap.delete(queId);
     event.reply('delete-que-reply', queId);
   } catch (error) {

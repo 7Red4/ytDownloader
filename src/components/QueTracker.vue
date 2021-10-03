@@ -40,7 +40,7 @@
               @focus="(e) => e.target.select()"
             ></v-text-field>
             <p class="text-caption">{{ startTime }}</p>
-            <template v-if="isLive">
+            <template v-if="isLive && !tracker.isReserve">
               <p>
                 <v-icon size="16" color="red">mdi-circle</v-icon>
                 直播中
@@ -184,6 +184,7 @@
             :color="isLive ? 'red' : 'primary'"
             @click="start"
             class="mx-2"
+            :disabled="tracker.isReserve && !processing"
           >
             {{
               isLive
