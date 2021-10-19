@@ -30,16 +30,37 @@ function hms2s(str) {
   return s;
 }
 
+function hm2s(str) {
+  str = `${str}:0`;
+  const p = str.split(':');
+  let s = 0;
+  let m = 1;
+
+  while (p.length > 0) {
+    s += m * parseInt(p.pop(), 10);
+    m *= 60;
+  }
+
+  return s;
+}
+
 function s2hms(str) {
   if (!str) return '00:00:00';
   return new Date(str * 1000).toISOString().substr(11, 8);
+}
+
+function s2hm(str) {
+  if (!str) return '00:00';
+  return new Date(str * 1000).toISOString().substr(11, 5);
 }
 
 Vue.config.productionTip = false;
 Vue.use(DB);
 Vue.prototype.$pyt = parseYtId;
 Vue.prototype.$hms2s = hms2s;
+Vue.prototype.$hm2s = hm2s;
 Vue.prototype.$s2hms = s2hms;
+Vue.prototype.$s2hm = s2hm;
 
 new Vue({
   router,

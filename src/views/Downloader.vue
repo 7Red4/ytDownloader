@@ -149,6 +149,40 @@
             </v-menu>
           </Async>
         </v-form>
+        <p class="grey--text text-body-2 my-1">
+          {{
+            videoInfo.videoDetails.isUpcoming
+              ? '預約直播的影片無法剪輯片段'
+              : '直播中的影片無法剪輯片段'
+          }}
+        </p>
+        <div v-if="!recordContent">
+          <v-switch
+            v-model="cut"
+            label="剪輯片段（限用 youtube-dl）"
+            :disabled="dlMethod === 'ytdl'"
+          ></v-switch>
+          <VueCtkDateTimePicker
+            v-if="cut"
+            v-model="startTime"
+            only-time="true"
+            dark="true"
+            noClearButton="true"
+            format="HH:mm"
+            formatted="HH:mm"
+            hint="開始時間（HH:mm）"
+          ></VueCtkDateTimePicker>
+          <VueCtkDateTimePicker
+            v-if="cut"
+            v-model="endTime"
+            only-time="true"
+            dark="true"
+            noClearButton="true"
+            format="HH:mm"
+            formatted="HH:mm"
+            hint="結束時間（HH:mm）"
+          ></VueCtkDateTimePicker>
+        </div>
         <v-switch v-model="useCookie" label="使用 cookie"></v-switch>
         <p class="body-2">
           提醒:使用 cookie 會影響 yt 的演算法 (會等同你看過)
@@ -191,11 +225,15 @@ import { mapActions, mapGetters } from 'vuex';
 
 import VideoInfoCard from '@/components/VideoInfoCard';
 
+import VueCtkDateTimePicker from 'vue-ctk-date-time-picker';
+import 'vue-ctk-date-time-picker/dist/vue-ctk-date-time-picker.css';
+
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
 export default {
   components: {
-    VideoInfoCard
+    VideoInfoCard,
+    VueCtkDateTimePicker
   },
 
   data() {
@@ -219,7 +257,11 @@ export default {
         noVideo: false,
         noAudio: false
       },
-      useCookie: !!this.$db.get('use_cookie').value()
+      useCookie: !!this.$db.get('use_cookie').value(),
+      startTime: '00:00',
+      endTime: '00:00',
+      limitTime: '00:00',
+      cut: false
     };
   },
 
@@ -311,8 +353,14 @@ export default {
   },
 
   watch: {
+    recordContent(v) {
+      v && (this.dlMethod = 'ytdl');
+    },
     videoInfo(v) {
       v && (this.title = filenamify(v.videoDetails.title));
+      v &&
+        (this.endTime = this.limitTime =
+          this.$s2hm(this.getQueFromData().duration));
     },
     fetchingFormats(v) {
       v && (this.formats = []);
@@ -334,8 +382,25 @@ export default {
       this.$db.set('use_cookie', v).write();
     },
     dlMethod(v) {
-      if (v === 'youtube-dl' && !!this.ytUrl && !this.formats.length) {
-        this.fetchYoutubeDlFormats(this.ytUrl);
+      if (this.ytUrl) {
+        if (v === 'youtube-dl' && !this.formats.length) {
+          this.fetchYoutubeDlFormats(this.ytUrl);
+        } else if (v === 'ytdl') {
+          this.cut = false;
+        }
+      }
+    },
+    startTime() {
+      if (this.$hm2s(this.startTime) > this.$hm2s(this.endTime)) {
+        this.startTime = this.endTime;
+      }
+    },
+    endTime() {
+      if (this.$hm2s(this.endTime) > this.$hm2s(this.limitTime)) {
+        this.endTime = this.limitTime;
+      }
+      if (this.$hm2s(this.endTime) < this.$hm2s(this.startTime)) {
+        this.endTime = this.startTime;
       }
     }
   },
@@ -423,7 +488,11 @@ export default {
         sourceReq: {
           noVideo: false,
           noAudio: false
-        }
+        },
+        startTime: '00:00',
+        endTime: '00:00',
+        limitTime: '00:00',
+        cut: false
       };
 
       Object.keys(originData).forEach((key) => {
@@ -488,6 +557,13 @@ export default {
         },
         sourceReq: this.sourceReq,
         cookie: this.useCookie ? cookie : false,
+        startTime: this.$hm2s(this.startTime),
+        endTime:
+          this.endTime === this.limitTime ? length() : this.$hm2s(this.endTime),
+        cut:
+          this.startTime === '00:00' && this.endTime === this.limitTime
+            ? false
+            : this.cut,
         ...extraProp
       };
     },
@@ -526,9 +602,15 @@ export default {
 
     addQue(andStart) {
       if (!this.$refs.form.validate()) return;
+      const queData = this.getQueFromData();
       ipcRenderer.send(
         andStart ? 'start-que' : 'add-que',
-        this.getQueFromData()
+        this.cut
+          ? {
+              ...queData,
+              duration: this.$hm2s(this.endTime) - this.$hm2s(this.startTime)
+            }
+          : queData
       );
       this.snackMsg = '已新增至佇列';
       this.snack = true;

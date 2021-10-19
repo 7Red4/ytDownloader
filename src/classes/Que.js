@@ -55,6 +55,9 @@ export default class Que {
     this.req = req || null;
     this.cookie = '';
     this.reserveTime = 0;
+    this.startTime = 0;
+    this.endTime = 0;
+    this.cut = false;
 
     this.creatingSnapshot = false;
     this.tracker = new Tracker(id);
@@ -96,7 +99,7 @@ export default class Que {
     this.tracker = new Tracker(this.id);
     this.req = req;
     this.event = event;
-    const { url, title, path, sourceReq, cookie, dlMethod, reserveTime } = req;
+    const { url, title, path, sourceReq, cookie, dlMethod, reserveTime, startTime, endTime, cut } = req;
     const { noVideo, noAudio } = sourceReq || {};
     this.dlMethod = dlMethod;
     this.noVideo = noVideo;
@@ -104,6 +107,9 @@ export default class Que {
     this.reserveTime = reserveTime;
     this.tracker.noVideo = noVideo;
     this.tracker.noAudio = noAudio;
+    this.startTime = startTime;
+    this.endTime = endTime;
+    this.cut = cut;
 
     if (cookie) {
       this.defaultYtdlOption = {
@@ -462,25 +468,49 @@ export default class Que {
 
   youtubeDlPipeVandA(video, audio) {
     const ffmpegProcess = cp.spawn(
-      ffmpeg,
-      [
-        '-loglevel',
-        '8',
-        '-hide_banner',
-        '-progress',
-        'pipe:3',
-        '-i',
-        audio,
-        '-i',
-        video,
-        '-map',
-        '0:a?',
-        '-map',
-        '1:v',
-        '-c:v',
-        'copy',
-        `${this.output}.${this.format}`
-      ],
+      ffmpeg, this.cut
+      ? [
+          '-loglevel',
+          '8',
+          '-hide_banner',
+          '-progress',
+          'pipe:3',
+          '-ss',
+          this.startTime,
+          '-to',
+          this.endTime,
+          '-i',
+          audio,
+          '-ss',
+          this.startTime,
+          '-to',
+          this.endTime,
+          '-i',
+          video,
+          '-map',
+          '0:a?',
+          '-map',
+          '1:v',
+          `${this.output}.${this.format}`
+        ]
+      : [
+          '-loglevel',
+          '8',
+          '-hide_banner',
+          '-progress',
+          'pipe:3',
+          '-i',
+          audio,
+          '-i',
+          video,
+          '-map',
+          '0:a?',
+          '-map',
+          '1:v',
+          '-c:v',
+          'copy',
+          `${this.output}.${this.format}`
+        ],
       {
         windowsHide: true,
         stdio: ['inherit', 'inherit', 'inherit', 'pipe', 'pipe', 'pipe']
