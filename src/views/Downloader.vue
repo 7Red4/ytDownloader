@@ -75,10 +75,10 @@
                 :items="[
                   { text: 'ytdl', value: 'ytdl' },
                   {
-                    text: `youtube-dl ${
+                    text: `yt-dlp ${
                       recordContent ? '目前錄影只使用 ytdl' : ''
                     }`,
-                    value: 'youtube-dl',
+                    value: 'yt-dlp',
                     disabled: recordContent
                   }
                 ]"
@@ -92,7 +92,7 @@
 
           <Async
             v-if="!videoInfo.videoDetails.isUpcoming"
-            :loading="dlMethod === 'youtube-dl' && fetchingFormats"
+            :loading="dlMethod === 'yt-dlp' && fetchingFormats"
           >
             <v-menu max-height="400">
               <template #activator="{ on }">
@@ -159,7 +159,7 @@
         <div v-if="!recordContent">
           <v-switch
             v-model="cut"
-            label="剪輯片段（限用 youtube-dl）"
+            label="剪輯片段（限用 yt-dlp）"
             :disabled="dlMethod === 'ytdl'"
           ></v-switch>
           <VueCtkDateTimePicker
@@ -268,8 +268,8 @@ export default {
   computed: {
     ...mapGetters(['getQueList', 'getQueById']),
     vQualities() {
-      if (this.dlMethod === 'youtube-dl') {
-        return this.youtubeDlVQualities;
+      if (this.dlMethod === 'yt-dlp') {
+        return this.ytDlpVQualities;
       } else if (this.dlMethod === 'ytdl') {
         return this.ytdlVQualities;
       } else {
@@ -277,8 +277,8 @@ export default {
       }
     },
     aQualities() {
-      if (this.dlMethod === 'youtube-dl') {
-        return this.youtubeDlAQualities;
+      if (this.dlMethod === 'yt-dlp') {
+        return this.ytDlpAQualities;
       } else if (this.dlMethod === 'ytdl') {
         return this.ytdlAQualities;
       } else {
@@ -318,9 +318,9 @@ export default {
         : [];
     },
 
-    youtubeDlVQualities() {
+    ytDlpVQualities() {
       return this.formats
-        .filter(({ label }) => /video only/.test(label))
+        .filter((f) => f.vcodec && !f.acodec)
         .sort((a, b) => {
           const aQ = a.label.match(/[0-9]{1,4}p/)
             ? a.label.match(/[0-9]{1,4}p/)[0]
@@ -332,9 +332,9 @@ export default {
         })
         .sort((a) => (/mp4/g.test(a.label) ? -1 : 1));
     },
-    youtubeDlAQualities() {
+    ytDlpAQualities() {
       return this.formats
-        .filter(({ label }) => /audio only/.test(label))
+        .filter((f) => !f.vcodec && f.acodec)
         .sort((a) => (/webm/g.test(a.label) ? 1 : -1));
     },
 
@@ -383,8 +383,8 @@ export default {
     },
     dlMethod(v) {
       if (this.ytUrl) {
-        if (v === 'youtube-dl' && !this.formats.length) {
-          this.fetchYoutubeDlFormats(this.ytUrl);
+        if (v === 'yt-dlp' && !this.formats.length) {
+          this.fetchYtDlpFormats(this.ytUrl);
         } else if (v === 'ytdl') {
           this.cut = false;
         }
@@ -417,15 +417,53 @@ export default {
     });
 
     ipcRenderer.on('get-yt-format-reply', (event, formats) => {
+      const dash = formats.match(/.+-/)[0];
+      const dashLength = dash.split(/\s/).map((d) => d.length);
       this.formats = formats
+        .split(dash)[1]
+        .split('\n')
         .filter((f) => !!f)
         .map((f) => {
-          const parsed = f.replace(/\s\s+/g, ' ');
-          const itag = parsed.split(' ')[0];
-          const label = parsed.replace(itag, '');
+          var sum = 0;
+          var arr = [];
+          for (let i = 0; i < dashLength.length; i++) {
+            arr.push(
+              (i === dashLength.length - 1
+                ? f.slice(sum)
+                : f.slice(sum, sum + dashLength[i])
+              ).replaceAll(' ', '')
+            );
+            sum += dashLength[i] + 1;
+          }
+          return {
+            id: arr[0],
+            ext: arr[1],
+            resolution: arr[2],
+            fps: arr[3],
+            filesize: arr[5],
+            tbr: arr[6],
+            proto: arr[7],
+            vcodec: arr[9],
+            vbr: arr[10],
+            acodec: arr[11],
+            abr: arr[12],
+            asr: arr[13],
+            moreInfo: arr[14]
+          };
+        })
+        .filter((f) => (f.vcodec && !f.acodec) || (!f.vcodec && f.acodec))
+        .map((f) => {
+          const itag = f.id;
+          const label = `${f.moreInfo.split(',')[0]} - ${
+            f.vcodec ? 'video' : 'audio'
+          }/${f.ext}; codecs="${f.vcodec ? f.vcodec : f.acodec}"`;
+          const vcodec = f.vcodec;
+          const acodec = f.acodec;
           return {
             itag,
-            label
+            label,
+            vcodec,
+            acodec
           };
         });
       this.fetchingFormats = false;
@@ -525,12 +563,12 @@ export default {
 
       ipcRenderer.send('get-yt-info', url);
       this.formats = [];
-      if (this.dlMethod === 'youtube-dl') {
-        this.fetchYoutubeDlFormats(url);
+      if (this.dlMethod === 'yt-dlp') {
+        this.fetchYtDlpFormats(url);
       }
     },
 
-    fetchYoutubeDlFormats(url) {
+    fetchYtDlpFormats(url) {
       this.fetchingFormats = true;
       ipcRenderer.send('get-yt-format', url);
     },

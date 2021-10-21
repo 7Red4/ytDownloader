@@ -88,7 +88,7 @@
             </template>
             <template
               v-if="
-                tracker.dlMethod === 'youtube-dl' ||
+                tracker.dlMethod === 'yt-dlp' ||
                 tracker.isMerging ||
                 downloadComplete
               "
