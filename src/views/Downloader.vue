@@ -290,8 +290,7 @@ export default {
       return this.videoInfo
         ? this.videoInfo.formats
             .filter(
-              ({ mimeType }) =>
-                /video/.test(mimeType) && !/av01/g.test(mimeType)
+              (mimeType) => mimeType.qualityLabel && !mimeType.audioQuality
             )
             .sort((a, b) =>
               Number(a.qualityLabel.replace('p', '')) <
@@ -309,7 +308,9 @@ export default {
     ytdlAQualities() {
       return this.videoInfo
         ? this.videoInfo.formats
-            .filter(({ mimeType }) => /audio/.test(mimeType))
+            .filter(
+              (mimeType) => !mimeType.qualityLabel && mimeType.audioQuality
+            )
             .sort(({ mimeType }) => (/mp4/.test(mimeType) ? -1 : 1))
             .map((el) => ({
               ...el,
