@@ -608,7 +608,7 @@ export default {
         this.cut
           ? {
               ...queData,
-              duration: this.$hm2s(this.endTime) - this.$hm2s(this.startTime)
+              duration: queData.endTime - queData.startTime
             }
           : queData
       );
