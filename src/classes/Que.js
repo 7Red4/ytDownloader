@@ -24,17 +24,14 @@ const ffmpeg = isDevelopment
     )
   : PATH.join(appRootDir, os.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg');
 
-const youtubeDl = isDevelopment
+const ytDlp = isDevelopment
   ? PATH.join(
       appRootDir,
       'src',
       'binaries',
-      os.platform === 'win32' ? 'youtube-dl.exe' : 'youtube-dl'
+      os.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp'
     )
-  : PATH.join(
-      appRootDir,
-      os.platform === 'win32' ? 'youtube-dl.exe' : 'youtube-dl'
-    );
+  : PATH.join(appRootDir, os.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp');
 
 const getInfo = async (url, options = {}) => {
   return await ytdl.getBasicInfo(url, options);
@@ -259,8 +256,8 @@ export default class Que {
     } else {
       if (this.dlMethod === 'ytdl') {
         this.ytdlProcess(url, quality);
-      } else if (this.dlMethod === 'youtube-dl') {
-        this.youtubeDlProcess(url, quality);
+      } else if (this.dlMethod === 'yt-dlp') {
+        this.ytDlpProcess(url, quality);
       }
     }
   }
@@ -404,7 +401,7 @@ export default class Que {
     this.slowEmit();
   }
 
-  async youtubeDlProcess(url, quality) {
+  async ytDlpProcess(url, quality) {
     // TODO: need can access cookie
     this.tracker.isRunning = true;
 
@@ -414,7 +411,7 @@ export default class Que {
     const getVideoM3u8 = () =>
       new Promise((resolve, reject) => {
         try {
-          const getm3u8 = cp.spawn(youtubeDl, ['-f', quality.video, '-g', url]);
+          const getm3u8 = cp.spawn(ytDlp, ['-f', quality.video, '-g', url]);
           let m3u8Url = '';
           getm3u8.stdout.on('data', (data) => {
             data = data.toString();
@@ -433,7 +430,7 @@ export default class Que {
     const getAudioM3u8 = () =>
       new Promise((resolve, reject) => {
         try {
-          const getm3u8 = cp.spawn(youtubeDl, ['-f', quality.audio, '-g', url]);
+          const getm3u8 = cp.spawn(ytDlp, ['-f', quality.audio, '-g', url]);
           let m3u8Url = '';
           getm3u8.stdout.on('data', (data) => {
             data = data.toString();
@@ -450,17 +447,17 @@ export default class Que {
       });
 
     try {
-      let videoM3u8Url = await getVideoM3u8();
-      let audioM3u8Url = await getAudioM3u8();
+      const videoM3u8Url = await getVideoM3u8();
+      const audioM3u8Url = await getAudioM3u8();
 
-      this.youtubeDlPipeVandA(videoM3u8Url, audioM3u8Url);
+      this.ytDlpPipeVandA(videoM3u8Url, audioM3u8Url);
     } catch (e) {
       this.event.reply('start-fail', e);
       consola.error(e);
     }
   }
 
-  youtubeDlPipeVandA(video, audio) {
+  ytDlpPipeVandA(video, audio) {
     const ffmpegProcess = cp.spawn(
       ffmpeg,
       [

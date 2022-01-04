@@ -26,8 +26,9 @@ const queMap = new Map();
 
 const ICON_DIR = PATH.join(appRootDir, 'icons', 'icon.png');
 
-let win = {};
+let win = null;
 let tray = null;
+const gotTheLock = app.requestSingleInstanceLock();
 
 protocol.registerSchemesAsPrivileged([
   { scheme: 'app', privileges: { secure: true, standard: true } }
@@ -95,19 +96,30 @@ const setUpTray = () => {
   });
 };
 
-app.on('ready', async () => {
-  if (isDevelopment && !process.env.IS_TEST) {
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    // Someone tried to run a second instance, we should focus our window.
+    if (win) {
+      win.show();
+      win.focus();
+    }
+  });
+
+  app.on('ready', async () => {
+    // if (isDevelopment && !process.env.IS_TEST) {}
     try {
       await installExtension(VUEJS_DEVTOOLS);
     } catch (e) {
       consola.error('Vue Devtools failed to install:', e.toString());
     }
-  }
 
-  createWindow();
+    createWindow();
 
-  setUpTray();
-});
+    setUpTray();
+  });
+}
 
 if (isDevelopment) {
   if (process.platform === 'win32') {

@@ -5,9 +5,9 @@
 # YT 下載器
 
 可以下載 youtube 影片的跨平台桌面應用程式
-使用 [ytdl-core]('https://github.com/fent/node-ytdl-core') 作為核心 [youtube-dl]('https://github.com/ytdl-org/youtube-dl') 作為副核心 [ffmpeg]('https://www.ffmpeg.org/') 做影像處理
+使用 [ytdl-core]('https://github.com/fent/node-ytdl-core') 作為核心 [yt-dlp]('https://github.com/ytdl-org/yt-dlp') 作為副核心 [ffmpeg]('https://www.ffmpeg.org/') 做影像處理
 
-ver 2.4.0
+ver 2.4.1
 
 [載點](https://github.com/7Red4/ytDownloader/releases)
 
@@ -54,7 +54,7 @@ ver 2.4.0
 - [x] 只下載 音/視訊
 - [x] 大量下載
 - [x] 只下載 音/視訊
-- [x] 可選擇使用 [youtube-dl](https://github.com/ytdl-org/youtube-dl) 的方法下載
+- [x] 可選擇使用 [yt-dlp](https://github.com/ytdl-org/yt-dlp) 的方法下載
 - [ ] 可以選定下載片段
 - [x] 可以設定時間自動錄製直播中節目
 - [ ] 狀態列進度

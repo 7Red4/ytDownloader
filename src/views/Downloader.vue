@@ -75,10 +75,10 @@
                 :items="[
                   { text: 'ytdl', value: 'ytdl' },
                   {
-                    text: `youtube-dl ${
+                    text: `yt-dlp ${
                       recordContent ? '目前錄影只使用 ytdl' : ''
                     }`,
-                    value: 'youtube-dl',
+                    value: 'yt-dlp',
                     disabled: recordContent
                   }
                 ]"
@@ -92,7 +92,7 @@
 
           <Async
             v-if="!videoInfo.videoDetails.isUpcoming"
-            :loading="dlMethod === 'youtube-dl' && fetchingFormats"
+            :loading="dlMethod === 'yt-dlp' && fetchingFormats"
           >
             <v-menu max-height="400">
               <template #activator="{ on }">
@@ -226,8 +226,8 @@ export default {
   computed: {
     ...mapGetters(['getQueList', 'getQueById']),
     vQualities() {
-      if (this.dlMethod === 'youtube-dl') {
-        return this.youtubeDlVQualities;
+      if (this.dlMethod === 'yt-dlp') {
+        return this.ytDlpVQualities;
       } else if (this.dlMethod === 'ytdl') {
         return this.ytdlVQualities;
       } else {
@@ -235,8 +235,8 @@ export default {
       }
     },
     aQualities() {
-      if (this.dlMethod === 'youtube-dl') {
-        return this.youtubeDlAQualities;
+      if (this.dlMethod === 'yt-dlp') {
+        return this.ytDlpAQualities;
       } else if (this.dlMethod === 'ytdl') {
         return this.ytdlAQualities;
       } else {
@@ -276,7 +276,7 @@ export default {
         : [];
     },
 
-    youtubeDlVQualities() {
+    ytDlpVQualities() {
       return this.formats
         .filter(({ label }) => /video only/.test(label))
         .sort((a, b) => {
@@ -290,7 +290,7 @@ export default {
         })
         .sort((a) => (/mp4/g.test(a.label) ? -1 : 1));
     },
-    youtubeDlAQualities() {
+    ytDlpAQualities() {
       return this.formats
         .filter(({ label }) => /audio only/.test(label))
         .sort((a) => (/webm/g.test(a.label) ? 1 : -1));
@@ -334,8 +334,8 @@ export default {
       this.$db.set('use_cookie', v).write();
     },
     dlMethod(v) {
-      if (v === 'youtube-dl' && !!this.ytUrl && !this.formats.length) {
-        this.fetchYoutubeDlFormats(this.ytUrl);
+      if (v === 'yt-dlp' && !!this.ytUrl && !this.formats.length) {
+        this.fetchytDlpFormats(this.ytUrl);
       }
     }
   },
@@ -456,12 +456,12 @@ export default {
 
       ipcRenderer.send('get-yt-info', url);
       this.formats = [];
-      if (this.dlMethod === 'youtube-dl') {
-        this.fetchYoutubeDlFormats(url);
+      if (this.dlMethod === 'yt-dlp') {
+        this.fetchytDlpFormats(url);
       }
     },
 
-    fetchYoutubeDlFormats(url) {
+    fetchytDlpFormats(url) {
       this.fetchingFormats = true;
       ipcRenderer.send('get-yt-format', url);
     },

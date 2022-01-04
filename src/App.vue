@@ -50,7 +50,13 @@
       </v-tabs>
 
       <v-spacer></v-spacer>
-      <v-btn fab small text @click="$vuetify.theme.dark = !$vuetify.theme.dark">
+      <v-btn
+        v-if="false"
+        fab
+        small
+        text
+        @click="$vuetify.theme.dark = !$vuetify.theme.dark"
+      >
         <v-icon>
           {{
             $vuetify.theme.dark

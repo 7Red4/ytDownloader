@@ -1,3 +1,6 @@
+// import os from 'os';
+// const isWin = os.platform === 'win32';
+
 module.exports = {
   transpileDependencies: ['vuetify'],
   pluginOptions: {
